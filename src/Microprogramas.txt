@@ -1,0 +1,727 @@
+Microprogramas - Arquitetura B - Assembly 1 
+
+1. add %<regA> %<regB>          || RegB <- RegA + RegB
+2. add <mem> %<regA>            || RegA <- memória[mem] + RegA
+3. add %<regA> <mem>            || Memória[mem] <- RegA + memória[mem]
+4. add imm %<regA>              || RegA <- imm + RegA
+5. sub %<regA> %<regB>          || RegB <- RegA - RegB
+6. sub <mem> %<regA>            || RegA <- memória[mem] - RegA
+7. sub %<regA> <mem>            || memória[mem] <- RegA - memória[mem]
+8. sub imm %<regA>              || RegA <- imm - RegA
+9. imul <mem> %<RegA>           || RegA <- RegA x memória[mem] (produto de inteiros)
+10. imul %<RegA> <mem>          || memória[mem] <- RegA x memória[mem] (idem)
+11. imul %<RegA> %<RegB>        || RegB <- RegA x RegB (idem)
+12. move <mem> %<regA>          || RegA <- memória[mem]
+13. move %<regA> <mem>          || memória[mem] <- RegA
+14. move %<regA> %<regB>        || RegB <- RegA
+15. move imm %<regA>            || RegA <- immediate
+16. inc %<regA>                 || RegA ++
+17. jmp <mem>                   || PC <- mem (desvio incondicional)
+18. jn <mem>                    || se última operação<0 então PC <- mem (desvio condicional)
+19. jz <mem>                    || se última operação=0 então PC <- mem (desvio condicional)
+20. jeq %<regA> %<regB> <mem>   || se RegA==RegB então PC <- mem (desvio condicional)
+21. jneq %<regA> %<regB> <mem>  || se RegA!=RegB então PC <- mem (desvio condicional)
+22. jgt %<regA> %<regB> <mem>   || se RegA>RegB então PC <- mem (desvio condicional)
+23. jlw %<regA> %<regB> <mem>   || se RegA<RegB então PC <- mem (desvio condicional)
+
+
+1. add %<regA> %<regB> || RegB <- RegA + RegB 
+    
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus 
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus 
+   regx -> intbus 
+   ula(0) <- intbus 
+   pc -> intbus 
+   ula(1) <- intbus 
+   ula++ 
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus 
+   regid <- intbus 
+   regx -> intbus 
+   ula(1) <- intbus 
+   ula+ 
+   FLAGS 
+   ula(1) -> intbus 
+   regx <- intbus 
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus 
+
+2. add <mem> %<regA> || RegA <- memória[mem] + RegA
+   
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  mem(r) <- extbus 
+  ula(0) <- extbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(1) <- intbus 
+  ula+ 
+  FLAGS 
+  ula(1) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+
+  3. add %<regA> <mem>  || Memória[mem] <- RegA + memória[mem]
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(0) <- intbus 
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula++ 
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus
+  mem(r) <- extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus
+  ula(1) -> intbus 
+  ir <- intbus 
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula(1) -> extbus
+  ir -> intbus
+  ula(1) <- intbus 
+  mem(r) <- extbus 
+  mem(w) <- extbus 
+  ula+ 
+  FLAGS 
+  ula(1) -> extbus 
+  mem(w) <- extbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+  4. add imm %<regA>  || RegA <- imm + RegA
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus
+  ula(1) -> extbus 
+  mem(r) <- extbus  
+  ula(0) <- extbus
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(1) <- intbus 
+  ula+ 
+  FLAGS 
+  ula(1) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+  5. sub %<regA> %<regB> || RegB <- RegA - RegB
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regx -> intbus 
+  ula(0) <- intbus 
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula++ 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(1) <- intbus 
+  ula- 
+  FLAGS 
+  ula(1) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+  6. sub <mem> %<regA> || RegA <- memória[mem] - RegA
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  mem(r) <- extbus 
+  ula(0) <- extbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(1) <- intbus 
+  ula-
+  FLAGS 
+  ula(1) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+  7. sub %<regA> <mem>  || memória[mem] <- RegA - memória[mem]
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  regx -> intbus 
+  ula(0) <- intbus 
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula++ 
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus
+  mem(r) <- extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus
+  ula(1) -> intbus 
+  ir <- intbus 
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula(1) -> extbus
+  ir -> intbus
+  ula(1) <- intbus 
+  mem(r) <- extbus 
+  mem(w) <- extbus 
+  ula-
+  FLAGS 
+  ula(1) -> extbus 
+  mem(w) <- extbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+8. sub imm %<regA>  || RegA <- imm - RegA
+ 
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus
+ula(1) -> extbus 
+mem(r) <- extbus  
+ula(0) <- extbus
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus 
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus 
+regx -> intbus 
+ula(1) <- intbus 
+ula- 
+FLAGS 
+ula(1) -> intbus 
+regx <- intbus 
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+
+9. imul <mem> %<RegA>  || RegA <- RegA x memória[mem] (produto de inteiros)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus 
+mem(r) <- extbus 
+mem(r) <- extbus 
+ula(0) <- extbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus 
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus 
+regx -> intbus 
+ula(1) <- intbus 
+ula*
+FLAGS 
+ula(1) -> intbus 
+regx <- intbus 
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+
+10. imul %<RegA> <mem> || memória[mem] <- RegA x memória[mem] (idem)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus 
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus 
+regx -> intbus 
+ula(0) <- intbus 
+pc -> intbus 
+ula(1) <- intbus 
+ula++ 
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus
+mem(r) <- extbus 
+mem(r) <- extbus 
+ula(1) <- extbus
+ula(1) -> intbus 
+ir <- intbus 
+pc -> intbus 
+ula(1) <- intbus 
+ula(1) -> extbus
+ir -> intbus
+ula(1) <- intbus 
+mem(r) <- extbus 
+mem(w) <- extbus 
+ula*
+FLAGS 
+ula(1) -> extbus 
+mem(w) <- extbus 
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+
+11. imul %<RegA> %<RegB> || RegB <- RegA x RegB 
+
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus 
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus 
+   regx -> intbus 
+   ula(0) <- intbus 
+   pc -> intbus 
+   ula(1) <- intbus 
+   ula++ 
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus 
+   regid <- intbus 
+   regx -> intbus 
+   ula(1) <- intbus 
+   ula*
+   FLAGS 
+   ula(1) -> intbus 
+   regx <- intbus 
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus 
+
+12. move <mem> %<regA>          || RegA <- memória[mem]
+
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus 
+   ula++
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus 
+   regid <- intbus 
+   pc -> intbus 
+   ula(1) <- intbus
+   ula(1) -> extbus 
+   mem(r) <- extbus 
+   mem(r) <- extbus 
+   ula(1) <- extbus 
+   ula(1) -> intbus
+   regx <- intbus
+   pc -> intbus
+   ula(1) <- intbus 
+   ula++
+   ula(1) -> intbus 
+   pc <- intbus  
+
+
+13. move %<regA> <mem>          || memória[mem] <- RegA
+
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula(1) -> extbus 
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus 
+pc -> intbus 
+ula(1) <- intbus
+ula++
+ula(1) -> extbus
+regx -> intbus 
+ula(0) <- intbus 
+mem(r) <- extbus 
+mem(w) <- extbus 
+ula(0) -> extbus 
+mem(w) <- extbus
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+
+14. move %<regA> %<regB>        || RegB <- RegA
+
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+ula++
+ula(1) -> extbus 
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus 
+pc -> intbus 
+ula(1) <- intbus
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regx -> intbus 
+regx <- intbus 
+pc -> intbus
+ula(1) <- intbus 
+ula++
+ula(1) -> intbus 
+pc <- intbus 
+
+15. move imm %<regA>            || RegA <- immediate
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus
+  ula(1) -> extbus 
+  mem(r) <- extbus  
+  ula(0) <- extbus
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  regid <- intbus 
+  ula(0) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus 
+
+16. inc %<regA>                 || RegA ++
+
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus
+  ula(1) -> extbus 
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus  
+  regid <- intbus 
+  regx -> intbus 
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  regx <- intbus 
+  pc -> intbus
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> intbus 
+  pc <- intbus
+
+
+17. jmp <mem>                   || PC <- mem (desvio incondicional)
+
+  pc -> intbus 
+  ula(1) <- intbus 
+  ula++
+  ula(1) -> extbus
+  mem(r) <- extbus 
+  ula(1) <- extbus 
+  ula(1) -> intbus 
+  pc <- intbus 
+
+18. jn <mem>                    || se última operação<0 então PC <- mem (desvio condicional)
+
+pc -> intbus 
+ula(1) <- intbus 
+ula++
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+int: intbus -> stm(1)
+ula++
+ula(1) -> intbus
+int: intbus -> stm(0)
+int: stm(N) -> intbus
+pc <- intbus 
+
+
+19. jz <mem>                    || se última operação=0 então PC <- mem (desvio condicional)
+
+pc -> intbus 
+ula(1) <- intbus 
+ula++
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+int: intbus -> stm(1)
+ula++
+ula(1) -> intbus
+int: intbus -> stm(0)
+int: stm(Z) -> intbus
+pc <- intbus 
+
+20. jeq %<regA> %<regB> <mem>   || se RegA==RegB então PC <- mem (desvio condicional)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(0) <- intbus
+pc -> intbus
+ula(1) <- intbus 
+ula++                    
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus          
+regx -> intbus 
+ula(1) <- intbus
+ula-                     
+FLAGS
+int: FLAGS -> intbus
+int: intbus -> stm(1)     
+ula++
+ula(1) -> intbus
+int: intbus -> stm(0)     
+int: stm(Z) -> intbus     
+pc <- intbus          || desvio se Z = 1; 
+
+21. jneq %<regA> %<regB> <mem>  || se RegA!=RegB então PC <- mem (desvio condicional)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(0) <- intbus
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(1) <- intbus
+ula-                      
+FLAGS
+int: FLAGS -> intbus
+int: intbus -> stm(0)     
+ula++
+ula(1) -> intbus
+int: intbus -> stm(1)     
+int: stm(Z) -> intbus     
+pc <- intbus              || desvio se Z = 0; 
+
+22. jgt %<regA> %<regB> <mem>   || se RegA>RegB então PC <- mem (desvio condicional)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(0) <- intbus
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(1) <- intbus
+ula-                      
+FLAGS
+int: FLAGS -> intbus
+int: intbus -> stm(0)     
+ula++
+ula(1) -> intbus
+int: intbus -> stm(1)     
+int: stm(N) -> intbus     
+int: stm(Z) -> intbus     
+pc <- intbus              || desvio se Z=0 e N=0 
+
+23. jlw %<regA> %<regB> <mem>   || se RegA<RegB então PC <- mem (desvio condicional)
+
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(0) <- intbus
+pc -> intbus
+ula(1) <- intbus 
+ula++                     
+ula(1) -> intbus 
+pc <- intbus              
+ula(1) -> extbus
+mem(r) <- extbus 
+ula(1) <- extbus 
+ula(1) -> intbus 
+regid <- intbus           
+regx -> intbus 
+ula(1) <- intbus
+ula-                      
+FLAGS
+int: FLAGS -> intbus
+int: intbus -> stm(1)     
+ula++
+ula(1) -> intbus
+int: intbus -> stm(0)     
+int: stm(N) -> intbus     
+pc <- intbus              || desvio se N = 1 
