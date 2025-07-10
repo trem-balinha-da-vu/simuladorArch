@@ -5,17 +5,19 @@ public class Register {
     private String registerName;
     private int data;
     private Bus busInt;
+    private Bus busExt;
 
     /**
 	 * Default constructor
 	 * @param busInt
+     * @param busExt
      * @param registerName
      * @param data
 	*/
-    public Register(String registerName, int data, Bus busInt) {
+    public Register(String registerName, Bus busInt, Bus busExt) {
         this.registerName = registerName;
-        this.data = data;
         this.busInt = busInt;
+        this.busExt = busExt;
     }
 
     private int flagBits[];
@@ -57,10 +59,18 @@ public class Register {
      *  This method stores the data from the bus into this register
      */
     public void store(){
-        this.data = busInt.getData();
+        this.data = busExt.getData();
     }
 
     public void read(){
-        busInt.setData(this.data);
+        this.busExt.setData(this.data);
+    }
+
+    public void internalRead() {
+        this.busInt.setData(this.data);
+    }
+
+    public void internalStore() {
+        this.data = this.busInt.getData();
     }
 }
