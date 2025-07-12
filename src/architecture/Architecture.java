@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.Scanner;
 import components.*;
 
@@ -163,7 +164,6 @@ public class Architecture {
     
     // esse metodo é usado para algumas operacoes da ula,
     // configurando os bits da flags de acordo com o resultado.
-    // NAO FOI TESTADO.
     private void setStatusFlags(int result) {
         Flags.setBit(0, 0);
         Flags.setBit(1, 0);
@@ -175,13 +175,264 @@ public class Architecture {
         }
     }
 
-    // os microprogramas ja estao implementados no arquivo de exemplo? sim
-    // parei na linha 192 do exemplo de degas
+    /**
+     * 
+     * implementação dos microprogramas...
+     * 
+     * 
+     *  */ 
 
 
+     /**
+	 * This method performs an (external) read from a register into the register list.
+	 * The register id must be in the demux bus
+	 */
+	private void registersRead() {
+		registersList.get(demux.getValue()).read();
+	}
+	
+	/**
+	 * This method performs an (internal) read from a register into the register list.
+	 * The register id must be in the demux bus
+	 */
+	private void registersInternalRead() {
+		registersList.get(demux.getValue()).internalRead();
+	}
+	
+	/**
+	 * This method performs an (external) store to a register into the register list.
+	 * The register id must be in the demux bus
+	 */
+	private void registersStore() {
+		registersList.get(demux.getValue()).store();
+	}
+	
+	/**
+	 * This method performs an (internal) store to a register into the register list.
+	 * The register id must be in the demux bus
+	 */
+	private void registersInternalStore() {
+		registersList.get(demux.getValue()).internalStore();
+	}
 
+    /**
+	 * Lê um arquivo executável (em linguagem de máquina) e guarda na memória.
+     * Não testado ainda
+	 */
+	public void readExec(String filename) throws IOException {
+		BufferedReader br = new BufferedReader(new		 
+		FileReader(filename+".dxf"));
+		String linha;
+		int i=0;
+		while ((linha = br.readLine()) != null) {
+			extBus.put(i);
+			memory.store();
+			extBus.put(Integer.parseInt(linha));
+			memory.store();
+			i++;
+		}
+		br.close();
+	}
     
+    /**
+     * Executa um programa guardado em memória
+	 */
+	public void controlUnitEexec() {
+		halt = false;
+		while (!halt) {
+			//fetch();
+			//decodeExecute();
+		}
+	}
+	
+    private void decodeExecute() {
+		this.IR.internalRead(); //a instrução está no intBus1
+		int command = this.intBus1.get();
+		//simulationDecodeExecuteBefore(command);
+		switch (command) {
+		case 0:
+			addRegReg();
+			break;
+		case 1:
+			addMemReg();
+			break;
+		case 2:
+			addRegMem();
+			break;
+		case 3:
+			addImmReg();
+			break;
+		/*case 5:
+			sub();
+			break;
+		*/
+		case 4:
+			subRegReg();
+			break;
+		
+		case 5:
+			subMemReg();
+			break;
+		
+		case 6:
+			subRegMem();
+			break;
+		
+		case 7:
+			subImmReg();
+			break;
+		
+		case 8:
+			imulMemReg(); //Linha 1310
+			break;
 
+		case 9:
+			imulRegMem(); //Linha 1314
+			break;
+
+		case 10:
+			imulRegReg(); //Linha 
+			break;
+
+		case 11:
+			moveMemReg();
+			break;
+
+		case 12:
+			moveRegMem();
+			break;
+
+		case 13:
+			moveRegReg();
+			break;
+		
+		case 14:
+			moveImmReg();
+			break;
+
+		case 15:
+			incReg(); 
+			break;
+
+		case 16:
+			jmp();
+			break;
+	
+		case 17:
+			jn();
+			break;
+
+		case 18:
+			jz();
+			break;
+			
+		case 19:
+			jeq();
+			break;
+
+		case 20:
+			jneq();
+			break;
+
+		case 21:
+			jgt();
+			break;
+
+		case 22:
+			jlw();
+			break;
+
+		case 23:
+			read();
+			break;
+
+		case 24:
+			store();
+			break;
+			
+		case 25:
+			ldi();
+			break;
+
+		default:
+			halt = true;
+			break;
+		}
+		// if (simulation) {simulationDecodeExecuteAfter(); }
+	}
+
+
+    //Funções de simulação
+    private void simulationDecodeExecuteBefore(int command) {
+        if(this.simulation){
+            System.out.println("----------BEFORE Decode and Execute phases--------------");
+            int parameter = 0;
+            Iterator<Register> var5 = this.registersList.iterator();
+
+            while(var5.hasNext()) {
+                Register r = (Register)var5.next();
+                System.out.println(r.getRegisterName() + ": " + r.getData());
+            }
+
+            String instruction;
+            if (command != -1) {
+                instruction = (String)this.commandsList.get(command);
+            } else {
+                instruction = "END";
+            }
+
+            if (hasOperands(instruction)) {
+                parameter = this.memory.getDataList()[this.PC.getData() + 1];
+                System.out.println("Instruction: " + instruction + " " + parameter);
+            } else {
+                System.out.println("Instruction: " + instruction);
+            }
+
+            if ("read".equals(instruction)) {
+                System.out.println("memory[" + parameter + "]=" + this.memory.getDataList()[parameter]);
+            }
+        }
+    }
+
+    private void simulationDecodeExecuteAfter() {
+        if(this.simulation){
+            System.out.println("-----------AFTER Decode and Execute phases--------------");
+            System.out.println("Internal Bus 1: " + this.intBus1.get());
+            System.out.println("External Bus 1: " + this.extBus.get());
+            Iterator<Register> var3 = this.registersList.iterator();
+
+            while(var3.hasNext()) {
+                Register r = (Register)var3.next();
+                System.out.println(r.getRegisterName() + ": " + r.getData());
+            }
+
+            Scanner entrada = new Scanner(System.in);
+            System.out.println("Press <Enter>");
+            String mensagem = entrada.nextLine();
+
+            entrada.close();
+        }
+    }
+
+    private void simulationFetch() {
+        if (this.simulation) {
+            System.out.println("-------Fetch Phase------");
+            System.out.println("PC: " + this.PC.getData());
+            System.out.println("IR: " + this.IR.getData());
+        }
+    }
+
+    private void fetch() {
+        this.PC.internalRead();
+        this.memory.read();
+        this.IR.internalStore();
+        simulationFetch();
+    }
+
+    // Inc é a unica operação que nao tem operandos
+    private boolean hasOperands(String instruction) {
+        return !"inc".equals(instruction);
+    }
 
 }
 
