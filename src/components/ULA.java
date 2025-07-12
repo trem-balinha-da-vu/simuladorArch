@@ -6,10 +6,9 @@ public class ULA {
 	private Register reg1;
 	private Register reg2;
 
-    public ULA(Bus extBus) {
-		super();
+    public ULA(Bus intBus1, Bus extBus) {
 		this.extBus = extBus;
-		intBus1 = new Bus();
+        this.intBus1 = intBus1;
 		reg1 = new Register("UlaReg0", intBus1, extBus);
 		reg2 = new Register("UlaReg1", intBus1, extBus);
 	}
