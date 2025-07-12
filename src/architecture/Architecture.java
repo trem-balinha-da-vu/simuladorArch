@@ -434,6 +434,10 @@ public class Architecture {
         return !"inc".equals(instruction);
     }
 
+    public int getMemorySize() {
+		return memorySize;
+	}
+
 }
 
 
