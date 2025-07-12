@@ -5,25 +5,25 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
-
 import components.*;
 import components.ULA;
 
 public class Architecture {
-    private boolean simulation;
 
+    private boolean simulation;
     private boolean halt;
 
+    //mudanças nos componentes da arquitetura
+    //temos dois barramentos: intBus1 e extBus
     private Bus extBus;
     private Bus intBus1;
-    private Bus intBus2;
 
+    //memória
     private Memory memory;
-
     private Memory statusMemory;
-
     private int memorySize;
 
+    //registradores
     private Register PC;
     private Register IR;
     private Register REG0;
@@ -33,9 +33,14 @@ public class Architecture {
     private Register StkTOP;
     private Register StkBOT;
     private Register Flags;
+
+    //ULA
     private ULA ula;
+
+    //Demux
     private Demux demux;
 
+    //Listas de comandos e registradores
     private ArrayList<String> commandsList;
     private ArrayList<Register> registersList;
 
@@ -97,9 +102,7 @@ public class Architecture {
     protected Bus getExtBus() { return extBus; }
     protected Bus getIntBus1() { return intBus1; }
     protected Bus getIntBus2() { return intBus2; }
-
     protected Memory getMemory() { return memory; }
-
     protected Register getPC() { return PC; }
     protected Register getIR() { return IR; }
 
@@ -111,10 +114,7 @@ public class Architecture {
     }
     protected Register getFlags() { return Flags; }
     protected ULA getUla() { return ula; }
-
-    public ArrayList<String> getCommandsList() {
-        return commandsList;
-    }
+    public ArrayList<String> getCommandsList() { return commandsList; }
 
     // colocar os microprogramas entre eles
     //the instructions table is
@@ -134,6 +134,7 @@ public class Architecture {
 	 */
 
     // preenche a lista de comandos
+
     protected void fillCommandsList() {
         commandsList = new ArrayList<String>();
         commandsList.add("add");   		//0
@@ -162,7 +163,7 @@ public class Architecture {
         }
     }
 
-    // os microprogramas ja estao implementados no arquivo de exemplo?
+    // os microprogramas ja estao implementados no arquivo de exemplo? sim
     // parei na linha 192 do exemplo de degas
 }
 
