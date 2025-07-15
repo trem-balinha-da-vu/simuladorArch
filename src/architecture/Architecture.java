@@ -175,6 +175,8 @@ public class Architecture {
         }
     }
 
+
+
     // Função auxiliar para reusar a lógica de incremento do PC
     private void incrementPC() {
         PC.internalRead();      // intBus1 <- [PC]

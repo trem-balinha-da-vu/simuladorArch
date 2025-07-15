@@ -55,4 +55,10 @@ public class Memory {
 	public void storeIn1() { 
 		this.dataList[1] = extBus.get();
 	}
+
+	public void directWrite(int address, int data) {
+		if (address >= 0 && address < this.size) {
+			this.dataList[address] = data;
+		}
+	}
 }
