@@ -116,6 +116,20 @@ public class Architecture {
         return commandsList;
     }
 
+    private void registersRead() {
+        int regId = demux.getValue();
+        if (regId >= 0 && regId < registersList.size()) {
+            registersList.get(regId).read();
+        }
+    }
+
+    private void registersStore() {
+        int regId = demux.getValue();
+        if (regId >= 0 && regId < registersList.size()) {
+            registersList.get(regId).store();
+        }
+    }
+
     // colocar os microprogramas entre eles
     //the instructions table is
     // CONFERIR O Microprogramas.txt
@@ -147,8 +161,8 @@ public class Architecture {
         ula.read(1);
         memory.read();
         ula.read(1);
-        demux.setValue(extBus.get());
-        registersInternalRead();
+        demux.setValue(extBus.getData());
+        registersRead();
         ula.internalStore(0);
 
         // busca regB
@@ -163,16 +177,16 @@ public class Architecture {
         ula.read(1);
         memory.read();
         ula.read(1);
-        demux.setValue(extBus.get());
-        registersInternalRead();
+        demux.setValue(extBus.getData());
+        registersRead();
         ula.internalStore(1);
 
         // subtrai e grava em regB
         ula.sub();
-        setStatusFlags(intBus1.get());
+        setStatusFlags(intBus1.getData());
 
         ula.internalRead(1);
-        registersInternalStore();
+        registersStore();
 
         PC.internalRead();
         ula.internalStore(1);
@@ -207,16 +221,16 @@ public class Architecture {
         ula.read(1);
         memory.read();
         ula.read(1);
-        demux.setValue(extBus.get());
-        registersInternalRead();
+        demux.setValue(extBus.getData());
+        registersRead();
         ula.internalStore(1);
 
         // subtrai e grava em regA
         ula.sub();
-        setStatusFlags(intBus1.get());
+        setStatusFlags(intBus1.getData());
 
         ula.internalRead(1);
-        registersInternalStore();
+        registersStore();
 
         PC.internalRead();
         ula.internalStore(1);
@@ -239,8 +253,8 @@ public class Architecture {
         ula.read(1);
         memory.read();
         ula.read(1);
-        demux.setValue(extBus.get());
-        registersInternalRead();
+        demux.setValue(extBus.getData());
+        registersRead();
         ula.internalStore(0);
 
         // busca endereco de memoria
@@ -257,7 +271,7 @@ public class Architecture {
 
         // subtrai e grava na memoria
         ula.sub();
-        setStatusFlags(intBus1.get());
+        setStatusFlags(intBus1.getData());
 
         ula.internalRead(1);
         memory.store();
@@ -295,16 +309,16 @@ public class Architecture {
         ula.read(1);
         memory.read();
         ula.read(1);
-        demux.setValue(extBus.get());
-        registersInternalRead();
+        demux.setValue(extBus.getData());
+        registersRead();
         ula.internalStore(1);
 
         // subtrai e grava em regA
         ula.sub();
-        setStatusFlags(intBus1.get());
+        setStatusFlags(intBus1.getData());
 
         ula.internalRead(1);
-        registersInternalStore();
+        registersStore();
 
         PC.internalRead();
         ula.internalStore(1);
@@ -341,6 +355,8 @@ public class Architecture {
             Flags.setBit(1,1);
         }
     }
+
+
 
     // os microprogramas ja estao implementados no arquivo de exemplo?
     // parei na linha 192 do exemplo de degas
