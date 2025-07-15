@@ -265,6 +265,55 @@ public class Architecture {
         incrementPC();
     }
 
+    /**
+     * Microprograma corrigido para: add %regA <mem> => MEM[mem] <- regA + MEM[mem]
+     */
+    public void addRegMem() {
+        // 1. BUSCA O OPERANDO DO REGISTRADOR (%regA)
+        incrementPC(); // PC aponta para o ID de %regA (em N+1)
+        
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(0);   // ula.reg1 <- [PC]
+        ula.read(0);            // extBus <- [PC] (endereço do ID de regA)
+        memory.read();          // extBus <- ID de regA
+        
+        demux.setValue(extBus.get()); // demux <- ID de regA
+        registersInternalRead();      // intBus1 <- [conteúdo de regA]
+        ula.internalStore(0);         // ula.reg1 <- [conteúdo de regA] (Primeiro operando na ULA)
+
+        // 2. BUSCA O OPERANDO DA MEMÓRIA (MEM[mem])
+        incrementPC(); // PC aponta para o endereço <mem> (em N+2)
+
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(1);   // ula.reg2 <- [PC]
+        ula.read(1);            // extBus <- [PC] (endereço do operando <mem>)
+        memory.read();          // extBus <- MEM[[PC]] (o valor de <mem>, o endereço efetivo)
+        memory.read();          // extBus <- MEM[<mem>] (o valor final do segundo operando)
+        ula.store(1);           // ula.reg2 <- [valor de MEM[<mem>]]
+
+        // 3. EXECUTA A SOMA
+        ula.add();
+        setStatusFlags(intBus1.get());
+
+        // 4. ARMAZENA O RESULTADO DE VOLTA NA MEMÓRIA
+        // O resultado está em ula.reg2. Precisamos do endereço <mem> novamente.
+        // Como o PC ainda aponta para N+2, podemos buscar o endereço <mem> de novo.
+        PC.internalRead();      // intBus1 <- [PC] (N+2)
+        ula.internalStore(0);   // ula.reg1 <- [PC] (Usa ula.reg1 como temporário)
+        ula.read(0);            // extBus <- [PC] (endereço de <mem>)
+        memory.read();          // extBus <- <mem> (o endereço efetivo, nosso destino)
+        
+        // Agora extBus tem o endereço de destino, inicia o processo de escrita
+        memory.store();         // 1ª parte da escrita: a memória salva o endereço de destino <mem>
+        
+        // Coloque o resultado da soma no barramento externo
+        ula.read(1);            // extBus <- [resultado] (lê de ula.reg2, onde a soma foi salva)
+        memory.store();         // 2ª parte da escrita: a memória grava o dado no endereço salvo
+
+        // 5. INCREMENTA O PC PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
+
 
 
      /**
