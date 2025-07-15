@@ -133,6 +133,186 @@ public class Architecture {
 			move regA regB (regA <- regB)
 	 */
 
+    // sub %regA %regB => regB <- regA - regB
+    public void subRegReg() {
+        // busca regA
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        demux.setValue(extBus.get());
+        registersInternalRead();
+        ula.internalStore(0);
+
+        // busca regB
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        demux.setValue(extBus.get());
+        registersInternalRead();
+        ula.internalStore(1);
+
+        // subtrai e grava em regB
+        ula.sub();
+        setStatusFlags(intBus1.get());
+
+        ula.internalRead(1);
+        registersInternalStore();
+
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+    }
+
+    // sub <mem> %regA => regA <- MEM[mem] - regA
+    public void subMemReg() {
+        // busca endereco da memoria
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        memory.read();
+        ula.store(0);
+
+        // busca regA
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        demux.setValue(extBus.get());
+        registersInternalRead();
+        ula.internalStore(1);
+
+        // subtrai e grava em regA
+        ula.sub();
+        setStatusFlags(intBus1.get());
+
+        ula.internalRead(1);
+        registersInternalStore();
+
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+    }
+
+    // sub %regA <mem> => MEM[mem] <- regA - MEM[mem]
+    public void subRegMem() {
+        // busca regA
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        demux.setValue(extBus.get());
+        registersInternalRead();
+        ula.internalStore(0);
+
+        // busca endereco de memoria
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        memory.read();
+        ula.store(1);
+
+        // subtrai e grava na memoria
+        ula.sub();
+        setStatusFlags(intBus1.get());
+
+        ula.internalRead(1);
+        memory.store();
+        memory.store();
+
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+    }
+
+    // sub imm %regA => regA <- imm - regA
+    public void subImmReg() {
+        // busca imediato
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.store(0);
+
+        // busca regA
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        memory.read();
+        ula.read(1);
+        demux.setValue(extBus.get());
+        registersInternalRead();
+        ula.internalStore(1);
+
+        // subtrai e grava em regA
+        ula.sub();
+        setStatusFlags(intBus1.get());
+
+        ula.internalRead(1);
+        registersInternalStore();
+
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.inc();
+        ula.internalRead(1);
+        PC.internalStore();
+    }
+
     // preenche a lista de comandos
     protected void fillCommandsList() {
         commandsList = new ArrayList<String>();
