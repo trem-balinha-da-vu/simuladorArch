@@ -95,9 +95,9 @@ public class Assembler {
     // analisa as strings em linhas, gerando um codigo de maquina para cada
     public void parse() {
         for (String s : lines) {
-            String tokens[] = s.split(" ");
+            String[] tokens = s.trim().split("\\s+");
             if (findCommandNumber(tokens) >= 0) {    // a linha é um comando
-                processCommand(tokens);
+                proccessCommand(tokens);
             } else {
                 // se a linha nao for um comando, entao pode ser uma variavel ou um label
                 if (tokens[0].endsWith(":")) {

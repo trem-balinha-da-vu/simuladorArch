@@ -73,4 +73,8 @@ public class Register {
     public void internalStore() {
         this.data = this.busInt.getData();
     }
+
+    public void setData(int data) {
+        this.data = data;
+    }
 }
