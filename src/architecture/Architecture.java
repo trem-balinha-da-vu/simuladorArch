@@ -559,6 +559,50 @@ public class Architecture {
         incrementPC();
     }
 
+    //12
+    //move %<regA> <mem>          || memória[mem] <- RegA
+
+
+    //13
+    //move %<regA> %<regB>        || RegB <- RegA
+    public void moveRegReg() {
+
+        // --- FASE 1: BUSCAR O VALOR DO REGISTRADOR DE ORIGEM (%regA) E ARMAZENAR EM ula(0) ---
+
+        // 1.1: Avança o PC para apontar para o ID de %regA (em [PC+1])
+        incrementPC();
+
+        // 1.2: Usa o padrão para buscar o ID de %regA, configurar o demux e ler seu valor
+        PC.internalRead();          // intBus1 <- [PC] (endereço do ID de regA)
+        ula.internalStore(0);       // ula(0) <- [PC] (usa ula(0) temporariamente para o endereço)
+        ula.read(0);                // extBus <- [PC]
+        memory.read();              // extBus <- ID de %regA (lido da memória)
+        demux.setValue(extBus.get()); // Demux é configurado para %regA.
+        registersInternalRead();    // intBus1 <- [conteúdo de %regA].
+
+        // 1.3: Salva o valor de %regA em ula(0) para uso posterior
+        ula.internalStore(0);       // ula(0) <- [conteúdo de %regA]. O valor está seguro.
+
+        // --- FASE 2: IDENTIFICAR O REGISTRADOR DE DESTINO (%regB) E ESCREVER O VALOR ---
+
+        // 2.1: Avança o PC para apontar para o ID de %regB (em [PC+2])
+        incrementPC();
+
+        // 2.2: Usa o padrão para buscar o ID de %regB e configurar o demux
+        PC.internalRead();          // intBus1 <- [PC] (endereço do ID de regB)
+        ula.internalStore(1);       // ula(1) <- [PC] (usa ula(1) para não sobrescrever o valor em ula(0))
+        ula.read(1);                // extBus <- [PC]
+        memory.read();              // extBus <- ID de %regB (lido da memória)
+        demux.setValue(extBus.get()); // Demux é RECONFIGURADO para %regB.
+
+        // 2.3: Coloca o valor salvo de %regA no barramento e armazena em %regB
+        ula.internalRead(0);        // intBus1 <- [conteúdo de %regA] (lido de ula(0)).
+        registersInternalStore();   // Registrador de Destino (%regB) <- intBus1. A cópia foi concluída.
+
+        // --- FASE 3: ATUALIZAR O PC PARA A PRÓXIMA INSTRUÇÃO (PC+3) ---
+        incrementPC();
+    }
+
 
      /**
 	 * This method performs an (external) read from a register into the register list.
@@ -639,10 +683,6 @@ public class Architecture {
 		case 3:
 			addImmReg();
 			break;
-		/*case 5:
-			sub();
-			break;
-		*/
 		case 4:
 			subRegReg();
 			break;
@@ -658,7 +698,6 @@ public class Architecture {
 		case 7:
 			subImmReg();
 			break;
-		
 		case 8:
 			imulMemReg(); //Linha 1310
 			break;

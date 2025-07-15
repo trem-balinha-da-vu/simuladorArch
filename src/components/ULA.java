@@ -38,11 +38,11 @@ public class ULA {
     }
 
     public void inc() {
-        this.reg2.internalRead();
+        this.reg1.internalRead();
         int res = this.intBus1.get();
         ++res;
         this.intBus1.put(res);
-        this.reg2.internalStore();
+        this.reg1.internalStore();
     }
 
     //Engole do barramento externo
