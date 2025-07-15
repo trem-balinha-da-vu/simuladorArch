@@ -506,6 +506,60 @@ public class Architecture {
         incrementPC();
     }
 
+    //8
+    // imul <mem> %<RegA>           || RegA <- RegA x memória[mem] (produto de inteiros)
+
+    //9
+    //imul %<RegA> <mem>          || memória[mem] <- RegA x memória[mem] (idem)
+
+    //10 
+    //imul %<RegA> %<RegB>        || RegB <- RegA x RegB (idem)
+
+    //11
+    //move <mem> %<regA>          || RegA <- memória[mem]
+    private void moveMemReg() {
+
+        // --- FASE 1: BUSCAR O PONTEIRO DA MEMÓRIA E ARMAZENAR EM ula(0) ---
+
+        incrementPC();
+
+        // 1.2: Busca o valor do ponteiro na memória e salva em ula(0)
+        PC.internalRead();          // intBus1 <- [PC] (endereço do ponteiro)
+        ula.internalStore(1);       // ula(1) <- [PC] (usa ula(1) para o endereço)
+        ula.read(1);                // extBus <- [PC]
+        memory.read();              // Memória lê o endereço e coloca o DADO (o ponteiro) no extBus.
+        ula.store(0);               // ula(0) <- extBus. (O ponteiro está salvo em ula(0)).
+
+        // --- FASE 2: IDENTIFICAR O REGISTRADOR DE DESTINO (%regA) ---
+
+        // 2.1: Avança o PC para apontar para o ID de %regA (em [PC+2])
+        incrementPC();
+
+        // 2.2: Usa o padrão para buscar o ID de %regA e configurar o demux
+        PC.internalRead();          // intBus1 <- [PC] (endereço do ID de regA)
+        ula.internalStore(1);       // ula(1) <- [PC] (usa ula(1) para o endereço)
+        ula.read(1);                // extBus <- [PC]
+        memory.read();              // Memória lê o endereço e coloca o DADO (ID do regA) no extBus.
+
+
+        demux.setValue(extBus.get()); // Demux é configurado com o ID para selecionar %regA.
+
+        // --- FASE 3: BUSCAR O VALOR FINAL NA MEMÓRIA E ARMAZENÁ-LO EM %regA ---
+
+        // 3.1: Usa o ponteiro salvo em ula(0) para ler o valor final da memória
+        ula.read(0);                // ula(0) -> extBus. (Coloca o ponteiro no barramento externo).
+        memory.read();              // Memória lê do ponteiro e coloca o valor final no extBus.
+
+        // 3.2: Move o valor final para o registrador de destino
+        ula.store(1);               // ula(1) <- extBus (move o valor final para a ula temporariamente).
+        ula.internalRead(1);        // ula(1) -> intBus1 (coloca o valor final no barramento interno).
+        registersInternalStore();   // Registrador de Destino (%regA) <- intBus1. Transferência concluída.
+
+        // --- FASE 4: ATUALIZAR O PC PARA A PRÓXIMA INSTRUÇÃO (PC+3) ---
+        incrementPC();
+    }
+
+
      /**
 	 * This method performs an (external) read from a register into the register list.
 	 * The register id must be in the demux bus
