@@ -175,12 +175,57 @@ public class Architecture {
         }
     }
 
+    // Função auxiliar para reusar a lógica de incremento do PC
+    private void incrementPC() {
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(1);   // ula.reg2 <- [PC] (usa ula.reg2 como temporário)
+        ula.inc();              // ula.reg2 <- [PC] + 1
+        ula.internalRead(1);    // intBus1 <- [PC] + 1
+        PC.internalStore();     // PC <- [PC] + 1
+    }
+
     /**
-     * 
-     * implementação dos microprogramas...
-     * 
-     * 
-     *  */ 
+     * add %regA %regB => regB <- regA + regB
+     */
+    public void addRegReg() { //1 323 344
+        incrementPC();
+        
+        // 2. BUSCA O ID DO regA DA MEMÓRIA
+        PC.internalRead();      // intBus1 <- [PC] (endereço do ID de regA)
+        ula.internalStore(0);   // ula.reg1 <- [PC] (move para a ULA para acessar o extBus)
+        ula.read(0);            // extBus <- [PC] (coloca o endereço no barramento externo)
+        memory.read();          // Memória lê o endereço do extBus e coloca o DADO (ID do regA) de volta no extBus
+        
+        // Agora, o ID do regA está no extBus. Vamos usá-lo para pegar o CONTEÚDO de regA.
+        demux.setValue(extBus.get()); // demux <- ID do regA
+        registersInternalRead();      // intBus1 <- [conteúdo do regA] (Lê do registrador selecionado pelo demux)
+        ula.internalStore(0);         // ula.reg1 <- [conteúdo do regA] (Guarda o primeiro operando na ULA)
+
+        // 3. INCREMENTA PC PARA APONTAR PARA O ID DO regB
+        incrementPC();
+
+        // 4. BUSCA O ID DO regB DA MEMÓRIA E O CONTEÚDO DO regB
+        PC.internalRead();      // intBus1 <- [PC] (endereço do ID de regB)
+        ula.internalStore(1);   // ula.reg2 <- [PC] (usa o outro registrador da ULA)
+        ula.read(1);            // extBus <- [PC]
+        memory.read();          // extBus <- ID do regB (dado lido da memória)
+        
+        demux.setValue(extBus.get()); // demux <- ID do regB (IMPORTANTE: demux agora aponta para regB, que é nosso destino final)
+        registersInternalRead();      // intBus1 <- [conteúdo do regB]
+        ula.internalStore(1);         // ula.reg2 <- [conteúdo do regB] (Guarda o segundo operando na ULA)
+
+        // 5. EXECUTA A SOMA E GRAVA O RESULTADO EM regB
+        ula.add();                    // Executa a soma: ula.reg2 <- ula.reg1 + ula.reg2
+        setStatusFlags(intBus1.get());// Atualiza as flags com o resultado que a ULA colocou no intBus1
+        
+        ula.internalRead(1);          // intBus1 <- [resultado da soma] (lê o resultado de ula.reg2)
+        // O demux ainda está com o valor do ID do regB, então a escrita será no lugar certo.
+        registersInternalStore();     // regB <- [resultado da soma]
+
+        // 6. INCREMENTA PC PARA APONTAR PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
+
 
 
      /**
