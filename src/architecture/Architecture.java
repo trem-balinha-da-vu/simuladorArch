@@ -227,7 +227,7 @@ public class Architecture {
     }
 
     /**
-     * Microprograma corrigido para: add <mem> %regA => regA <- MEM[mem] + regA
+     * Microprograma para: add <mem> %regA => regA <- MEM[mem] + regA
      */
     public void addMemReg() {
         // 1. BUSCA O OPERANDO DA MEMÓRIA (Acesso Indireto)
@@ -266,7 +266,7 @@ public class Architecture {
     }
 
     /**
-     * Microprograma corrigido para: add %regA <mem> => MEM[mem] <- regA + MEM[mem]
+     * Microprograma para: add %regA <mem> => MEM[mem] <- regA + MEM[mem]
      */
     public void addRegMem() {
         // 1. BUSCA O OPERANDO DO REGISTRADOR (%regA)
@@ -314,6 +314,82 @@ public class Architecture {
         incrementPC();
     }
 
+    /**
+     * Microprograma para: add imm %regA => regA <- imm + regA
+     */
+    public void addImmReg() {
+        // 1. BUSCA O VALOR IMEDIATO DA MEMÓRIA
+        incrementPC(); // PC aponta para o valor imediato (em N+1)
+        
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(0);   // ula.reg1 <- [PC]
+        ula.read(0);            // extBus <- [PC] (endereço do valor imediato)
+        memory.read();          // extBus <- [valor imediato]
+        ula.store(0);           // ula.reg1 <- [valor imediato] (Primeiro operando na ULA)
+
+        // 2. BUSCA O OPERANDO DO REGISTRADOR
+        incrementPC(); // PC aponta para o ID de %regA (em N+2)
+
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(1);   // ula.reg2 <- [PC]
+        ula.read(1);            // extBus <- [PC] (endereço do ID de regA)
+        memory.read();          // extBus <- ID de regA
+        
+        demux.setValue(extBus.get()); // demux <- ID de regA
+        registersInternalRead();      // intBus1 <- [conteúdo de regA]
+        ula.internalStore(1);         // ula.reg2 <- [conteúdo de regA] (Segundo operando na ULA)
+
+        // 3. EXECUTA A SOMA E GRAVA O RESULTADO
+        ula.add();                      // ula.reg2 <- ula.reg1 + ula.reg2
+        setStatusFlags(intBus1.get());  // Atualiza flags
+        
+        ula.internalRead(1);            // intBus1 <- [resultado]
+        // O demux ainda aponta para regA, então a escrita será no destino correto.
+        registersInternalStore();       // regA <- [resultado]
+
+        // 4. INCREMENTA PC PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
+
+    // sub %regA %regB => regB <- regA - regB
+    public void subRegReg() {
+        // busca regA
+        incrementPC();
+
+        // 2. BUSCA O ID DO regA DA MEMÓRIA
+        PC.internalRead();      // intBus1 <- [PC] (endereço do ID de regA)
+        ula.internalStore(0);   // ula.reg1 <- [PC] (move para a ULA para acessar o extBus)
+        ula.read(0);            // extBus <- [PC] (coloca o endereço no barramento externo)
+        memory.read();          // Memória lê o endereço do extBus e coloca o DADO (ID do regA) de volta no extBus
+        
+        // Agora, o ID do regA está no extBus. Vamos usá-lo para pegar o CONTEÚDO de regA.
+        demux.setValue(extBus.get()); // demux <- ID do regA
+        registersInternalRead();      // intBus1 <- [conteúdo do regA] (Lê do registrador selecionado pelo demux)
+        ula.internalStore(0);         // ula.reg1 <- [conteúdo do regA] (Guarda o primeiro operando na ULA)
+
+        // 3. INCREMENTA PC PARA APONTAR PARA O ID DO regB
+        incrementPC();
+
+        // 4. BUSCA O ID DO regB DA MEMÓRIA E O CONTEÚDO DO regB
+        PC.internalRead();      // intBus1 <- [PC] (endereço do ID de regB)
+        ula.internalStore(1);   // ula.reg2 <- [PC] (usa o outro registrador da ULA)
+        ula.read(1);            // extBus <- [PC]
+        memory.read();          // extBus <- ID do regB (dado lido da memória)
+        
+        demux.setValue(extBus.get()); // demux <- ID do regB (demux agora aponta para regB, que é nosso destino final)
+        registersInternalRead();      // intBus1 <- [conteúdo do regB]
+        ula.internalStore(1);         // ula.reg2 <- [conteúdo do regB] (Guarda o segundo operando na ULA)
+
+        // subtrai e grava em regB
+        ula.sub();
+        setStatusFlags(intBus1.get());
+
+        ula.internalRead(1);
+        registersInternalStore();
+
+        // 6. INCREMENTA PC PARA APONTAR PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
 
 
      /**
