@@ -226,6 +226,45 @@ public class Architecture {
         incrementPC();
     }
 
+    /**
+     * Microprograma corrigido para: add <mem> %regA => regA <- MEM[mem] + regA
+     */
+    public void addMemReg() {
+        // 1. BUSCA O OPERANDO DA MEMÓRIA (Acesso Indireto)
+        incrementPC(); // PC aponta para o endereço <mem> (em N+1)
+        
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(0);   // ula.reg1 <- [PC]
+        ula.read(0);            // extBus <- [PC] (endereço do operando <mem>)
+        memory.read();          // extBus <- MEM[[PC]] (o valor de <mem>, o endereço efetivo)
+        // Neste ponto, extBus contém o endereço efetivo. Usamos ele para buscar o dado final.
+        memory.read();          // extBus <- MEM[<mem>] (o valor final do primeiro operando)
+        ula.store(0);           // ula.reg1 <- [valor de MEM[<mem>]]
+
+        // 2. BUSCA O OPERANDO DO REGISTRADOR
+        incrementPC(); // PC aponta para o ID de %regA (em N+2)
+
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(1);   // ula.reg2 <- [PC]
+        ula.read(1);            // extBus <- [PC] (endereço do ID de regA)
+        memory.read();          // extBus <- ID de regA
+        
+        demux.setValue(extBus.get()); // demux <- ID de regA
+        registersInternalRead();      // intBus1 <- [conteúdo de regA]
+        ula.internalStore(1);         // ula.reg2 <- [conteúdo de regA]
+
+        // 3. EXECUTA A SOMA E GRAVA O RESULTADO
+        ula.add();                      // ula.reg2 <- ula.reg1 + ula.reg2
+        setStatusFlags(intBus1.get());  // Atualiza flags
+        
+        ula.internalRead(1);            // intBus1 <- [resultado]
+        // O demux ainda aponta para regA, então a escrita será no destino correto.
+        registersInternalStore();       // regA <- [resultado]
+
+        // 4. INCREMENTA PC PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
+
 
 
      /**
