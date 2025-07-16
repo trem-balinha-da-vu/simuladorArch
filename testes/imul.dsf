@@ -1,0 +1,38 @@
+; --- Programa de Teste Unificado para todas as instruções IMUL ---
+
+; --- Variáveis ---
+val1
+memResult
+
+; --- FASE 1: SETUP ---
+; Inicializa os registradores e a memória com valores conhecidos.
+move 3 %REG0        ; REG0 = 3
+move 5 %REG1        ; REG1 = 5
+move 7 %REG2        ; Usa REG2 como temporário
+move %REG2 val1       ; val1 = 7
+ldi 0
+move %REG0 memResult  ; memResult = 0 (para o teste final)
+
+; --- FASE 2: TESTES ---
+; Agora, com valores conhecidos, testamos cada variante de IMUL.
+
+; Teste 1: imulRegReg (%REG1 <- %REG0 * %REG1)
+; REG1 deveria ir de 5 para (3 * 5) = 15.
+; REG0 permanece 3.
+imul %REG0 %REG1
+
+; Teste 2: imulMemReg (%REG0 <- %REG0 * val1)
+; REG0 deveria ir de 3 para (3 * 7) = 21.
+imul val1 %REG0
+
+; Teste 3: imulRegMem (memResult <- %REG1 * memResult)
+; Para tornar o teste interessante, primeiro colocamos um valor em memResult.
+move 2 %REG2
+move %REG2 memResult  ; Agora, memResult = 2
+; Agora, memResult deveria ir de 2 para (15 * 2) = 30.
+imul %REG1 memResult
+
+; --- FASE 3: VERIFICAÇÃO ---
+; Para facilitar a verificação do Teste 3, lemos o valor final
+; da variável 'memResult' de volta para o REG0.
+read memResult
