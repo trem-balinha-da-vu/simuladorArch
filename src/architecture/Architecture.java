@@ -593,66 +593,63 @@ private void writeToMemory(int address, int data) {
 }
 
 // Opcode 8
-// imul <mem> %<RegA> => RegA <- RegA * memória[mem]
+// imul <mem> %regA => RegA <- RegA * memória[mem]
 public void imulMemReg() {
-    // --- Definições ---
-    int subroutineAddr = 74, returnAddr = 121, resultAddr = 123, xAddr = 255, yAddr = 254, epilogueAddr = 118;
+    // Definições...
+    int subroutineAddr = 74, returnAddr = 121, resultAddr = 253, xAddr = 255, yAddr = 254, epilogueAddr = 118;
     int pc_id = 5, reg0_id = 1, reg1_id = 2, tempReg0Addr = 255, tempReg1Addr = 250;
 
-    // --- FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS ---
-    incrementPC(); // PC para ponteiro <mem>
+    // FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS
+    incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); memory.read(); ula.store(0);
     ula.internalRead(0);
     writeToMemory(xAddr, intBus1.get()); // Passa [MEM[mem]] para 'x'
 
-    incrementPC(); // PC para id_regA
+    incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
-    registersInternalRead(); ula.internalStore(0);
+    registersInternalRead(); ula.internalStore(1); // CORRIGIDO: Usa ula.reg2 para o segundo operando
     int destRegId = demux.getValue();
-    ula.internalRead(0);
+    ula.internalRead(1);
     writeToMemory(yAddr, intBus1.get()); // Passa [regA] para 'y'
     
-    // --- FASE 2: PREPARAR O EPÍLOGO E O RETORNO ---
+    // FASE 2: PREPARAR O EPÍLOGO E O RETORNO
     int epilogueWriteAddr = epilogueAddr;
-    // Epílogo: move result %REG_destino; restaura regs; jmp de retorno
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, resultAddr); writeToMemory(epilogueWriteAddr++, destRegId);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, tempReg0Addr); writeToMemory(epilogueWriteAddr++, reg0_id);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, tempReg1Addr); writeToMemory(epilogueWriteAddr++, reg1_id);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, returnAddr); writeToMemory(epilogueWriteAddr++, pc_id);
     
-    // Salva o endereço de retorno
     incrementPC();
     PC.internalRead();
     writeToMemory(returnAddr, PC.getData());
 
-    // --- FASE 3: SALTAR PARA A SUB-ROTINA ---
+    // FASE 3: SALTAR PARA A SUB-ROTINA
     intBus1.put(subroutineAddr);
     PC.internalStore();
 }
 
 // Opcode 9
-// imul %<RegA> <mem> => memória[mem] <- RegA x memória[mem]
+// imul %regA <mem> => memória[mem] <- RegA x memória[mem]
 public void imulRegMem() {
-    // --- Definições ---
+    // Definições...
     int subroutineAddr = 74, returnAddr = 121, resultAddr = 123, xAddr = 255, yAddr = 254, epilogueAddr = 118;
     int reg0_id = 1, reg1_id = 2, pc_id = 5, tempReg0Addr = 255, tempReg1Addr = 250;
 
-    // --- FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS ---
+    // FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS
     incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
-    registersInternalRead(); ula.internalStore(0);
+    registersInternalRead(); ula.internalStore(0); // ula.reg1 <- [regA]
     ula.internalRead(0);
-    writeToMemory(xAddr, intBus1.get()); // Passa [regA] para 'x'
+    writeToMemory(xAddr, intBus1.get());
 
     incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read();
-    int memDestAddr = extBus.get(); // Guarda o endereço de destino final
-    memory.read(); ula.store(0);
-    ula.internalRead(0);
-    writeToMemory(yAddr, intBus1.get()); // Passa [MEM[mem]] para 'y'
+    int memDestAddr = extBus.get();
+    memory.read(); ula.store(1); // CORRIGIDO: Usa ula.reg2 para o segundo operando
+    ula.internalRead(1);
+    writeToMemory(yAddr, intBus1.get());
 
-    // --- FASE 2: PREPARAR O EPÍLOGO E O RETORNO ---
-    // Epílogo: move result %REG0; move %REG0 <mem_destino>; restaura regs; jmp de retorno
+    // FASE 2: PREPARAR O EPÍLOGO E O RETORNO
     int epilogueWriteAddr = epilogueAddr;
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, resultAddr); writeToMemory(epilogueWriteAddr++, reg0_id);
     writeToMemory(epilogueWriteAddr++, 12); writeToMemory(epilogueWriteAddr++, reg0_id); writeToMemory(epilogueWriteAddr++, memDestAddr);
@@ -660,51 +657,48 @@ public void imulRegMem() {
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, tempReg1Addr); writeToMemory(epilogueWriteAddr++, reg1_id);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, returnAddr); writeToMemory(epilogueWriteAddr++, pc_id);
     
-    // Salva o endereço de retorno
     incrementPC();
     PC.internalRead();
     writeToMemory(returnAddr, PC.getData());
 
-    // --- FASE 3: SALTAR PARA A SUB-ROTINA ---
+    // FASE 3: SALTAR PARA A SUB-ROTINA
     intBus1.put(subroutineAddr);
     PC.internalStore();
 }
 
 // Opcode 10
-// imul %<RegA> %<RegB> => RegB <- RegA x RegB
+// imul %regA %regB => RegB <- RegA x RegB
 public void imulRegReg() {
-    // --- Definições ---
+    // Definições...
     int subroutineAddr = 74, returnAddr = 121, resultAddr = 123, xAddr = 255, yAddr = 254, epilogueAddr = 118;
     int pc_id = 5, reg0_id = 1, reg1_id = 2, tempReg0Addr = 255, tempReg1Addr = 250;
 
-    // --- FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS ---
+    // FASE 1: BUSCAR OPERANDOS E PASSAR PARÂMETROS
     incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
-    registersInternalRead(); ula.internalStore(0);
+    registersInternalRead(); ula.internalStore(0); // ula.reg1 <- [regA]
     ula.internalRead(0);
-    writeToMemory(xAddr, intBus1.get()); // Passa [regA] para 'x'
+    writeToMemory(xAddr, intBus1.get());
 
     incrementPC();
     PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
-    registersInternalRead(); ula.internalStore(0);
+    registersInternalRead(); ula.internalStore(1); // CORRIGIDO: Usa ula.reg2 para o segundo operando
     int destRegId = demux.getValue();
-    ula.internalRead(0);
-    writeToMemory(yAddr, intBus1.get()); // Passa [regB] para 'y'
+    ula.internalRead(1);
+    writeToMemory(yAddr, intBus1.get());
     
-    // --- FASE 2: PREPARAR O EPÍLOGO E O RETORNO ---
+    // FASE 2: PREPARAR O EPÍLOGO E O RETORNO
     int epilogueWriteAddr = epilogueAddr;
-    // Epílogo: move result %REG_destino; restaura regs; jmp de retorno
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, resultAddr); writeToMemory(epilogueWriteAddr++, destRegId);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, tempReg0Addr); writeToMemory(epilogueWriteAddr++, reg0_id);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, tempReg1Addr); writeToMemory(epilogueWriteAddr++, reg1_id);
     writeToMemory(epilogueWriteAddr++, 11); writeToMemory(epilogueWriteAddr++, returnAddr); writeToMemory(epilogueWriteAddr++, pc_id);
     
-    // Salva o endereço de retorno
     incrementPC();
     PC.internalRead();
     writeToMemory(returnAddr, PC.getData());
 
-    // --- FASE 3: SALTAR PARA A SUB-ROTINA ---
+    // FASE 3: SALTAR PARA A SUB-ROTINA
     intBus1.put(subroutineAddr);
     PC.internalStore();
 }
