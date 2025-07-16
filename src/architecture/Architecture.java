@@ -642,6 +642,23 @@ public class Architecture {
 
     //14
     //move imm %<regA>            || RegA <- immediate
+    public void moveImmReg() {
+        incrementPC();
+
+        ula.read(0);    // ula(0) -> extbus
+        memory.read(); // lê de extbus e devolve: imediato -> extbus
+        ula.store(1); // ula(1) <- extbus: ula(1) guarda imediato
+
+        incrementPC();
+
+        ula.read(0);
+        memory.read(); // retorna o id de reg
+        demux.setValue(extBus.get());
+        ula.internalRead(1); //joga o imediato no extbus
+        registersInternalStore();
+
+        incrementPC();
+    }
 
     //15
     //inc %<regA>                 || RegA ++
