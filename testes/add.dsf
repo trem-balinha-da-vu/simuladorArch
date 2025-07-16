@@ -1,0 +1,39 @@
+; --- Programa de Teste Unificado para todas as instruções ADD ---
+
+; --- Variáveis ---
+myVar
+temp
+
+; --- FASE 1: SETUP ---
+; Inicializa os registradores e a memória com valores conhecidos.
+; Usaremos REG2 como um registrador temporário para setup.
+move 10 %REG0     ; Define REG0 = 10
+move 20 %REG1     ; Define REG1 = 20
+move 5 %REG2      ; Usa REG2 para colocar o valor 5...
+move %REG2 myVar    ; ...na variável de memória 'myVar'. Agora, myVar = 5.
+
+; --- FASE 2: TESTES ---
+; Agora, com valores conhecidos, testamos cada variante de ADD.
+; Acompanhe os resultados esperados nos comentários.
+
+; Teste 1: addImmReg (REG0 <- 7 + REG0)
+; REG0 deveria ir de 10 para (7 + 10) = 17.
+add 7 %REG0
+
+; Teste 2: addRegReg (REG1 <- REG0 + REG1)
+; REG1 deveria ir de 20 para (17 + 20) = 37.
+add %REG0 %REG1
+
+; Teste 3: addMemReg (REG0 <- myVar + REG0)
+; REG0 deveria ir de 17 para (5 + 17) = 22.
+add myVar %REG0
+
+; Teste 4: addRegMem (myVar <- REG1 + myVar)
+; myVar deveria ir de 5 para (37 + 5) = 42.
+add %REG1 myVar
+
+; --- FASE 3: VERIFICAÇÃO (Opcional) ---
+; Para facilitar a verificação, vamos carregar o valor final de myVar
+; em um registrador para que ele apareça claramente no log final.
+read myVar
+move %REG0 %REG2  ; O resultado da leitura (42) vai para REG0, e aqui movemos para REG2.
