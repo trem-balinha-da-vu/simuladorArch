@@ -59,18 +59,22 @@ public class Register {
      *  This method stores the data from the bus into this register
      */
     public void store(){
-        this.data = busExt.getData();
+        this.data = busExt.get();
     }
 
     public void read(){
-        this.busExt.setData(this.data);
+        this.busExt.put(this.data);
     }
 
     public void internalRead() {
-        this.busInt.setData(this.data);
+        this.busInt.put(this.data);
     }
 
     public void internalStore() {
-        this.data = this.busInt.getData();
+        this.data = this.busInt.get();
+    }
+
+    public void setData(int data) {
+        this.data = data;
     }
 }

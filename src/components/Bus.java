@@ -7,11 +7,11 @@ public class Bus {
     }
     private int data;
 
-    public int getData() {
+    public int get() {
         return this.data;
     }
 
-    public void setData(int data) {
+    public void put(int data) {
         this.data = data;
     }
 }
