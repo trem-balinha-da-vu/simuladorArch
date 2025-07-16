@@ -722,16 +722,58 @@ public class Architecture {
         // já usará o novo valor do PC.
     }
 
-    //17 
-    // jn <mem>                    || se última operação<0 então PC <- mem (desvio condicional)
+    //17
+    //jn <mem>                    || se última operação<0 então PC <- mem (desvio condicional)
+    /**
+     * jn <mem> => se Flags.Negative == 1, então PC <- mem
+     * Desvia a execução para o endereço <mem> se a flag Negativo estiver ativa (1),
+     * o que geralmente ocorre após uma operação de subtração resultar em um
+     * número negativo.
+     */
+    public void jn() {
+
+        // --- FASE 1: PREPARAÇÃO - CARREGAR OS DOIS POSSÍVEIS ENDEREÇOS NA statusMemory ---
+
+        // 1.1: Calcula e armazena o endereço de "continuação" (PC+2) em statusMemory[0].
+        // Este é o endereço para onde o PC irá se a condição de pulo for falsa.
+        PC.internalRead();          // PC -> intBus1
+        ula.internalStore(1);       // ula(1) <- PC (Usa ula(1) pois o método inc() opera sobre ele)
+        ula.inc();                  // ula(1)++ (PC+1)
+        ula.inc();                  // ula(1)++ (PC+2)
+        ula.read(1);                // ula(1) -> extBus (Endereço PC+2 está no barramento externo)
+        statusMemory.storeIn0();    // statusMemory[0] <- extBus. Endereço de continuação salvo.
+
+        // 1.2: Busca o endereço de "pulo" de [PC+1] e armazena em statusMemory[1].
+        // Este é o endereço para onde o PC irá se a condição de pulo for verdadeira.
+        PC.internalRead();          // PC -> intBus1
+        ula.internalStore(1);       // ula(1) <- PC
+        ula.inc();                  // ula(1)++ (PC+1)
+        ula.read(1);                // ula(1) -> extBus (Endereço do operando está no extBus)
+        memory.read();              // Memória lê de [PC+1] e coloca o endereço de pulo no extBus.
+        statusMemory.storeIn1();    // statusMemory[1] <- extBus. Endereço de pulo salvo.
+
+
+        // --- FASE 2: SELEÇÃO - USAR A FLAG NEGATIVO PARA LER O ENDEREÇO CORRETO E ATUALIZAR O PC ---
+
+        // 2.1: Coloca o valor da flag Negativo (0 ou 1) no barramento externo.
+        extBus.put(Flags.getBit(1)); // << PONTO CHAVE: Usa o bit 1 (flag Negativo) como seletor.
+
+        // 2.2: Usa o valor da flag no barramento como endereço para ler da statusMemory.
+        statusMemory.read();        // Se extBus=0, lê de statusMemory[0]. Se extBus=1, lê de statusMemory[1].
+                                    // O endereço de destino correto está agora no extBus.
+
+        // 2.3: Move o endereço selecionado do extBus para o PC (via ULA).
+        ula.store(0);               // ula(0) <- extBus (ULA captura o endereço correto).
+        ula.internalRead(0);        // ula(0) -> intBus1 (ULA o joga para o barramento interno).
+        PC.internalStore();         // PC <- intBus1. O PC é atualizado, finalizando o desvio.
+    }
 
     //18
-    //jz
-    /**
-     * jz <mem> => se Flags.Zero == 1, então PC <- mem
-     * Desvia a execução para o endereço <mem> se a flag Zero estiver ativa (1).
-     * Utiliza uma "statusMemory" para realizar a seleção condicional do próximo PC.
-     */
+    // jz <mem>                    || se última operação=0 então PC <- mem (desvio condicional)
+    /* jz <mem> => se Flags.Zero == 1, então PC <- mem
+    * Desvia a execução para o endereço <mem> se a flag Zero estiver ativa (1).
+    * Utiliza uma "statusMemory" para realizar a seleção condicional do próximo PC.
+    */
     public void jz() {
 
         // --- FASE 1: PREPARAÇÃO - CARREGAR OS DOIS POSSÍVEIS ENDEREÇOS NA statusMemory ---
@@ -766,6 +808,255 @@ public class Architecture {
         ula.store(0);               // ula(0) <- extBus (ULA captura o endereço correto).
         ula.internalRead(0);        // ula(0) -> intBus1 (ULA o joga para o barramento interno).
         PC.internalStore();         // PC <- intBus1. O PC é atualizado com o destino correto.
+    }
+
+    //19
+    //jeq %<regA> %<regB> <mem>   || se RegA==RegB então PC <- mem (desvio condicional)
+    public void jeq() {
+        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO ---
+        // Busca regA e armazena em ula.reg1
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.read(0); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(0);
+
+        // Busca regB e armazena em ula.reg2
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(1);
+
+        // Compara regA - regB e atualiza as flags
+        ula.sub();
+        setStatusFlags(intBus1.get()); // Z=1 se regA == regB
+
+        // --- FASE 2: PREPARAR ENDEREÇOS E EXECUTAR DESVIO CONDICIONAL ---
+        // O PC está em N+2. O endereço de pulo está em N+3 e o de continuação é N+4.
+
+        // Endereço de "continuação" (N+4):
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.inc(); 
+        ula.inc(); 
+        ula.read(0);
+        statusMemory.storeIn0(); // statusMemory[0] <- Endereço para onde NÃO pular.
+
+        // Endereço de "pulo" (<mem> de N+3):
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read();
+        statusMemory.storeIn1(); // statusMemory[1] <- Endereço para onde PULAR.
+
+        // Usa a flag Zero (Z) como seletor. Se Z=1 (iguais), lê statusMemory[1].
+        extBus.put(Flags.getBit(0));
+        statusMemory.read();
+        
+        // Carrega o endereço selecionado no PC
+        ula.store(0);
+        ula.internalRead(0);
+        PC.internalStore();
+    }
+
+    //20
+    // jneq %<regA> %<regB> <mem>  || se RegA!=RegB então PC <- mem (desvio condicional)
+    public void jneq() {
+        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.read(0); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(0);
+
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(1);
+
+        ula.sub();
+        setStatusFlags(intBus1.get()); // Z=0 se regA != regB
+
+        // --- FASE 2: PREPARAR ENDEREÇOS E EXECUTAR DESVIO CONDICIONAL ---
+        // O PC está em N+2. O endereço de pulo está em N+3 e o de continuação é N+4.
+
+        // Endereço de "pulo" (<mem> de N+3): **ARMAZENADO EM statusMemory[0]**
+        incrementPC();
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.read(0); 
+        memory.read();
+        statusMemory.storeIn0(); // << LÓGICA INVERTIDA: Endereço de PULO vai para a posição 0.
+
+        // Endereço de "continuação" (N+4): **ARMAZENADO EM statusMemory[1]**
+        // (PC foi para N+3, então PC+1 = N+4)
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.inc(); 
+        ula.read(1);
+        statusMemory.storeIn1(); // << LÓGICA INVERTIDA: Endereço de CONTINUAÇÃO vai para a posição 1.
+
+        // Usa a flag Zero (Z) como seletor. Se Z=0 (diferentes), lê statusMemory[0] (pulo).
+        extBus.put(Flags.getBit(0));
+        statusMemory.read();
+        
+        // Carrega o endereço selecionado no PC
+        ula.store(0);
+        ula.internalRead(0);
+        PC.internalStore();
+    }
+
+    //21
+    // jgt %<regA> %<regB> <mem>   || se RegA>RegB então PC <- mem (desvio condicional)
+    public void jgt() {
+        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO (regA - regB) ---
+
+        // 1.1: Busca o valor de %regA e armazena em ula.reg1.
+        incrementPC(); // PC aponta para N+1 (ID de regA).
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.read(0); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(0); // ula.reg1 <- [conteúdo de regA]
+
+        // 1.2: Busca o valor de %regB e armazena em ula.reg2.
+        incrementPC(); // PC aponta para N+2 (ID de regB).
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(1); // ula.reg2 <- [conteúdo de regB]
+
+        // 1.3: ULA executa regA - regB e atualiza as flags. **LÓGICA CORRIGIDA**
+        ula.sub(); // Calcula ula.reg1 - ula.reg2 (regA - regB) diretamente.
+        setStatusFlags(intBus1.get()); // As flags N e Z originais (da subtração) estão prontas.
+
+
+        // --- FASE 2: PREPARAÇÃO DOS ENDEREÇOS DE DESVIO ---
+        // O PC está em N+2. O endereço de pulo está em [N+3] e o de continuação é N+4.
+
+        // Endereço de "continuação" (N+4):
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.inc(); 
+        ula.inc(); 
+        ula.read(0);
+        statusMemory.storeIn0(); // statusMemory[0] <- N+4
+
+        // Endereço de "pulo" (de [N+3]):
+        incrementPC(); // PC aponta para N+3 (endereço <mem>).
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read();
+        statusMemory.storeIn1(); // statusMemory[1] <- <mem>
+
+
+        // --- FASE 3: COMBINAÇÃO DAS FLAGS E DESVIO FINAL ---
+        // Esta fase já estava logicamente correta e é mantida. Agora ela recebe as flags corretas.
+
+        // 3.1: Carrega as flags N e Z na ULA.
+        extBus.put(Flags.getBit(1)); // Põe a flag Negativo (N) no extBus.
+        ula.store(0);                // ula.reg1 <- N
+
+        extBus.put(Flags.getBit(0)); // Põe a flag Zero (Z) no extBus.
+        ula.store(1);                // ula.reg2 <- Z
+
+        // 3.2: Soma as flags. A nova flag Zero será 1 se e somente se (N+Z) for 0.
+        ula.add();
+        setStatusFlags(intBus1.get()); // Flags (N', Z') agora refletem o estado de (N+Z).
+
+        // 3.3: Usa a NOVA flag Zero (Z') como seletor.
+        // Se regA > regB, então N=0 e Z=0. A soma N+Z=0, e a nova flag Zero (Z') será 1.
+        // Usamos Z' para selecionar statusMemory[1] (o endereço de pulo).
+        // Se regA <= regB, então N=1 ou Z=1. A soma N+Z != 0, e Z' será 0.
+        // Usamos Z' para selecionar statusMemory[0] (o endereço de continuação).
+        extBus.put(Flags.getBit(0));
+        statusMemory.read();
+        
+        // 3.4: Move o endereço selecionado para o PC.
+        ula.store(0);
+        ula.internalRead(0);
+        PC.internalStore();
+    }
+
+    //22
+    //jlw %<regA> %<regB> <mem>   || se RegA<RegB então PC <- mem (desvio condicional)
+    public void jlw() {
+        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO (regA - regB) ---
+
+        // 1.1: Busca o valor de %regA e armazena em ula.reg1.
+        incrementPC(); // PC aponta para N+1 (ID de regA).
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.read(0); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(0); // ula.reg1 <- [conteúdo de regA]
+
+        // 1.2: Busca o valor de %regB e armazena em ula.reg2.
+        incrementPC(); // PC aponta para N+2 (ID de regB).
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read(); 
+        demux.setValue(extBus.get());
+        registersInternalRead(); 
+        ula.internalStore(1); // ula.reg2 <- [conteúdo de regB]
+
+        // 1.3: ULA executa regA - regB (ula.reg1 - ula.reg2) e atualiza as flags.
+        ula.sub();
+        setStatusFlags(intBus1.get()); // Flags são atualizadas com base no resultado.
+
+        // --- FASE 2: DESVIO CONDICIONAL (BASEADO NA FLAG NEGATIVO) ---
+
+        // 2.1: Prepara os endereços de "pulo" e "continuação" na statusMemory.
+        // O PC está em N+2. O endereço de "pulo" está em N+3 e o de "continuação" é N+4.
+
+        // Endereço de "continuação" (N+4, ou seja, PC+2):
+        PC.internalRead(); 
+        ula.internalStore(0); 
+        ula.inc(); 
+        ula.inc(); 
+        ula.read(0);
+        statusMemory.storeIn0(); // statusMemory[0] <- PC+2 (N+4)
+
+        // Endereço de "pulo" (de [N+3]):
+        incrementPC(); // PC aponta para N+3 (endereço <mem>).
+        PC.internalRead(); 
+        ula.internalStore(1); 
+        ula.read(1); 
+        memory.read();
+        statusMemory.storeIn1(); // statusMemory[1] <- <mem>
+
+        // 2.2: Usa a flag Negativo (bit 1) para selecionar o próximo PC.
+        extBus.put(Flags.getBit(1));
+        statusMemory.read(); // O endereço de destino correto (pulo ou continuação) está agora no extBus.
+        
+        // 2.3: Move o endereço selecionado para o PC.
+        ula.store(0);
+        ula.internalRead(0);
+        PC.internalStore(); // PC é atualizado com o destino correto.
     }
 
     //23
