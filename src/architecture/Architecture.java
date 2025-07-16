@@ -1011,17 +1011,17 @@ public class Architecture {
 
         // 1.1: Calcula e armazena o endereço de "continuação" (PC+2) em statusMemory[0].
         PC.internalRead();          // PC -> intBus1
-        ula.internalStore(0);       // ula(0) <- PC (Guarda o PC original para cálculos)
+        ula.internalStore(1);       // ula(1) <- PC (Guarda o PC original para cálculos)
         ula.inc();                  // ula(0)++ (PC+1)
         ula.inc();                  // ula(0)++ (PC+2)
-        ula.read(0);                // ula(0) -> extBus (Endereço PC+2 está no barramento externo)
+        ula.read(1);                // ula(0) -> extBus (Endereço PC+2 está no barramento externo)
         statusMemory.storeIn0();    // statusMemory[0] <- extBus. Endereço de continuação salvo.
 
         // 1.2: Busca o endereço de "pulo" de [PC+1] e armazena em statusMemory[1].
         PC.internalRead();          // PC -> intBus1
-        ula.internalStore(0);       // ula(0) <- PC
+        ula.internalStore(1);       // ula(0) <- PC
         ula.inc();                  // ula(0)++ (PC+1)
-        ula.read(0);                // ula(0) -> extBus (Endereço do operando está no extBus)
+        ula.read(1);                // ula(0) -> extBus (Endereço do operando está no extBus)
         memory.read();              // Memória lê de [PC+1] e coloca o endereço de pulo no extBus.
         statusMemory.storeIn1();    // statusMemory[1] <- extBus. Endereço de pulo salvo.
 
@@ -1074,10 +1074,10 @@ public class Architecture {
 
         // Endereço de "continuação" (N+4):
         PC.internalRead(); 
-        ula.internalStore(0); 
+        ula.internalStore(1); 
         ula.inc(); 
         ula.inc(); 
-        ula.read(0);
+        ula.read(1);
         statusMemory.storeIn0(); // statusMemory[0] <- Endereço para onde NÃO pular.
 
         // Endereço de "pulo" (<mem> de N+3):
@@ -1187,10 +1187,10 @@ public class Architecture {
 
         // Endereço de "continuação" (N+4):
         PC.internalRead(); 
-        ula.internalStore(0); 
+        ula.internalStore(1); 
         ula.inc(); 
         ula.inc(); 
-        ula.read(0);
+        ula.read(1);
         statusMemory.storeIn0(); // statusMemory[0] <- N+4
 
         // Endereço de "pulo" (de [N+3]):
