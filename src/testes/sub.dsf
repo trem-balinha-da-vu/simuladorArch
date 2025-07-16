@@ -1,0 +1,8 @@
+x
+move 1 %REG0
+move 3 %REG1
+move 7 x
+sub %REG0 %REG1
+sub x %REG0
+sub %REG0 x
+sub 3 %REG1

@@ -1,0 +1,7 @@
+move 13 %REG1
+laco:
+sub 2 %REG1
+jz end
+jn end
+jmp laco
+end:
