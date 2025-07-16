@@ -639,7 +639,6 @@ public class Architecture {
         incrementPC();
     }
 
-
     //14
     //move imm %<regA>            || RegA <- immediate
     public void moveImmReg() {
@@ -680,7 +679,6 @@ public class Architecture {
     }
 
 
-
     //23
     //read
     /**
@@ -715,7 +713,36 @@ public class Architecture {
         incrementPC();
     }
 
+    //25
+    //store
+    public void store() {
+        // --- FASE 1: BUSCAR O ENDEREÇO DE DESTINO ---
+        incrementPC(); // PC aponta para o operando <mem> (em N+1)
+        
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.read(1);
+        memory.read(); // O endereço de destino <mem> está no extBus
+        ula.store(1);  // ula.reg2 <- <mem> (Guarda o ENDEREÇO de destino)
 
+        // --- FASE 2: BUSCAR O DADO DE REG0 ---
+        // AJUSTE: Usando o demux para manter o padrão
+        demux.setValue(1);        // Aponta para REG0 (índice 1)
+        registersInternalRead();  // intBus1 <- [conteúdo de REG0]
+        ula.internalStore(0);     // ula.reg1 <- [conteúdo de REG0] (Guarda o DADO)
+
+        // --- FASE 3: REALIZAR O ARMAZENAMENTO NA MEMÓRIA ---
+        // Esta parte já estava perfeita no seu código original
+        ula.read(1);      // Envia o ENDEREÇO de destino para o extBus
+        memory.store();   // 1º passo: Memória captura o endereço
+
+        ula.read(0);      // Envia o DADO para o extBus
+        memory.store();   // 2º passo: Memória escreve o dado no endereço
+
+        // --- FASE 4: ATUALIZAR O PC PARA A PRÓXIMA INSTRUÇÃO ---
+        // O PC já avançou uma vez, agora avança de novo para N+2
+        incrementPC();
+    }
 
      /**
 	 * This method performs an (external) read from a register into the register list.
