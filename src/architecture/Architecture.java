@@ -679,6 +679,44 @@ public class Architecture {
         incrementPC();
     }
 
+
+
+    //23
+    //read
+    /**
+     * read <mem> => REG0 <- Memória[Memória[PC+1]]
+     * Realiza uma leitura indireta da memória. O operando <mem> na posição [PC+1]
+     * é um ponteiro para o endereço final de onde o dado será lido. O valor lido
+     * é armazenado em REG0.
+     */
+    public void read() {
+        // --- FASE 1: BUSCAR O VALOR DO PONTEIRO (Correto no original) ---
+        incrementPC(); // PC aponta para N+1
+
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.read(1);
+        memory.read();
+        ula.store(0); // O valor do ponteiro está salvo em ula.reg1
+
+        // --- FASE 2: USAR O PONTEIRO PARA BUSCAR O DADO FINAL E ARMAZENAR EM REG0 ---
+        ula.read(0);      // Coloca o ponteiro no extBus
+        memory.read();    // O dado final está agora no extBus
+
+        ula.store(1);     // ula.reg2 captura o dado final do extBus
+        ula.internalRead(1);  // ula.reg2 coloca o dado final no intBus1
+
+        // AJUSTE 1: Usando o demux para manter o padrão arquitetural
+        demux.setValue(1);        // Demux agora aponta para REG0 (índice 1)
+        registersInternalStore(); // REG0 armazena o valor do intBus1
+
+        // --- FASE 3: ATUALIZAR O PC PARA A PRÓXIMA INSTRUÇÃO ---
+        // A instrução usou 1 operando, então o PC avança mais uma vez para N+2
+        incrementPC();
+    }
+
+
+
      /**
 	 * This method performs an (external) read from a register into the register list.
 	 * The register id must be in the demux bus
