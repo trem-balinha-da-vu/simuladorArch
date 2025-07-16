@@ -561,7 +561,43 @@ public class Architecture {
 
     //12
     //move %<regA> <mem>          || memória[mem] <- RegA
+    public void moveRegMem() {
+        // 1. BUSCA O CONTEÚDO DO REGISTRADOR DE ORIGEM E GUARDA NA ULA
+        incrementPC(); // PC aponta para o ID de %regA (em N+1)
+        
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(0);   // ula.reg1 <- [PC]
+        ula.read(0);            // extBus <- [PC] (endereço do ID de regA)
+        memory.read();          // extBus <- ID de regA
+        
+        demux.setValue(extBus.get()); // demux <- ID de regA
+        registersInternalRead();      // intBus1 <- [conteúdo de regA]
+        ula.internalStore(0);         // ula.reg1 <- [conteúdo de regA] (Guarda o DADO a ser movido)
 
+        // 2. BUSCA O ENDEREÇO DE MEMÓRIA DE DESTINO E GUARDA NA ULA
+        incrementPC(); // PC aponta para o endereço <mem> (em N+2)
+
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(1);   // ula.reg2 <- [PC]
+        ula.read(1);            // extBus <- [PC]
+        memory.read();          // extBus <- <mem> (o endereço de destino)
+        ula.store(1);           // ula.reg2 <- <mem> (Guarda o ENDEREÇO de destino)
+
+        // 3. REALIZA A ESCRITA NA MEMÓRIA
+        // O endereço de destino está em ula.reg2 e o dado está em ula.reg1.
+        // A escrita na memória é um processo de 2 passos.
+
+        // Passo 1: Enviar o endereço de destino para a memória.
+        ula.read(1);            // extBus <- [endereço de destino] (lido de ula.reg2)
+        memory.store();         // A memória "prepara" a escrita no endereço recebido.
+
+        // Passo 2: Enviar o dado a ser escrito.
+        ula.read(0);            // extBus <- [dado] (lido de ula.reg1)
+        memory.store();         // A memória escreve o dado no endereço preparado.
+
+        // 4. INCREMENTA O PC PARA A PRÓXIMA INSTRUÇÃO
+        incrementPC();
+    }
 
     //13
     //move %<regA> %<regB>        || RegB <- RegA
