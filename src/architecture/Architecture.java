@@ -576,6 +576,68 @@ public class Architecture {
 
     //10 
     //imul %<RegA> %<RegB>        || RegB <- RegA x RegB (idem)
+    public void imulRegReg() {
+        // --- Endereços e IDs constantes da sub-rotina ---
+        int subroutineAddr = 74;
+        int returnAddr = 121;
+        int xAddr = 125;
+        int yAddr = 124;
+        int operandToModifyAddr = 112;
+
+        // --- FASE 1: BUSCAR AMBOS OS OPERANDOS ---
+        // 1.1: Busca o conteúdo de %regA e armazena em ula.reg1
+        incrementPC();
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(0); // ula.reg1 agora contém [regA]
+
+        // 1.2: Busca o conteúdo de %regB e armazena em ula.reg2.
+        // O valor em ula.reg1 permanece intacto. O ID de %regB fica no demux.
+        incrementPC();
+        PC.internalRead(); ula.internalStore(1); ula.read(1); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(1); // ula.reg2 agora contém [regB]
+
+        // --- FASE 2: PASSAR PARÂMETROS PARA A SUB-ROTINA ---
+        // Agora que temos [regA] em ula.reg1 e [regB] em ula.reg2, escrevemos ambos na memória.
+
+        // 2.1: Escreve o valor de regA (de ula.reg1) no endereço xAddr (125)
+        intBus1.put(xAddr);       // Põe o endereço de destino (125) no intBus1
+        ula.internalStore(1);     // Guarda o endereço temporariamente em ula.reg2 (sobrescreve [regB] temporariamente)
+        ula.read(1);              // Põe o endereço (125) no extBus
+        memory.store();           // Prepara a memória
+        ula.read(0);              // Põe o dado [regA] (de ula.reg1) no extBus
+        memory.store();           // Escreve o dado
+
+        // 2.2: Recarrega [regB] em ula.reg2 (já que foi usado para o endereço) e escreve em yAddr (124)
+        demux.setValue(demux.getValue()); // Garante que demux ainda aponta para regB
+        registersInternalRead();          // intBus1 <- [regB]
+        ula.internalStore(1);             // Recarrega ula.reg2 com [regB]
+        
+        intBus1.put(yAddr);       // Põe o endereço de destino (124) no intBus1
+        ula.internalStore(0);     // Guarda o endereço temporariamente em ula.reg1 (sobrescreve [regA])
+        ula.read(0);              // Põe o endereço (124) no extBus
+        memory.store();           // Prepara a memória
+        ula.read(1);              // Põe o dado [regB] (de ula.reg2) no extBus
+        memory.store();           // Escreve o dado
+
+        // --- FASE 3: PREPARAR O RETORNO ---
+        
+        // 3.1: Modifica a sub-rotina para que o resultado volte para %regB.
+        intBus1.put(operandToModifyAddr); ula.internalStore(0);
+        ula.read(0); memory.store();
+        intBus1.put(demux.getValue()); ula.internalStore(1);
+        ula.read(1); memory.store();
+
+        // 3.2: Salva o endereço de retorno.
+        incrementPC();
+        PC.internalRead(); ula.internalStore(0);
+        intBus1.put(returnAddr); ula.internalStore(1);
+        ula.read(1); memory.store();
+        ula.read(0); memory.store();
+
+        // --- FASE 4: SALTAR PARA A SUB-ROTINA ---
+        intBus1.put(subroutineAddr);
+        PC.internalStore();
+    }
 
     //11
     //move <mem> %<regA>          || RegA <- memória[mem]
