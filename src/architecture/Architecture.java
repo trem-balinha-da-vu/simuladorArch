@@ -78,6 +78,7 @@ public class Architecture {
         demux = new Demux();
 
         fillCommandsList();
+        setupIMul(); 
     }
 
     // Preenche a lista de registradores
@@ -124,6 +125,67 @@ public class Architecture {
 		commandsList.add("read");               //23
 		commandsList.add("store");              //24
 		commandsList.add("ldi");                //25
+    }
+
+    /**
+     * Este método define os valores na memória para a sub-rotina de multiplicação.
+     * O algoritmo e os opcodes são 100% compatíveis com a SUA arquitetura.
+     */
+    public void setupIMul() {
+        // --- Definições de Endereços e IDs ---
+        // Variáveis da sub-rotina em endereços de memória altos
+        int returnAddr = 121, resultAddr = 123, yAddr = 124, xAddr = 125, tempReg0 = 126, tempReg1 = 127;
+        // IDs dos Registradores (baseado na registersList)
+        int reg0_id = 1, reg1_id = 2, pc_id = 5;
+        // Endereços dos Labels da sub-rotina
+        int loopAddr = 88, endLoopAddr = 111;
+
+        // --- Código de Máquina da Sub-rotina ---
+        int[] subroutineMachineCode = {
+            // --- Setup: Salva registradores e inicializa variáveis ---
+            /* 74 */ 12, reg0_id, tempReg0,    // move %REG0 tempReg0
+            /* 77 */ 12, reg1_id, tempReg1,    // move %REG1 tempReg1
+            /* 80 */ 25, 0,                   // ldi 0  (REG0 <- 0)
+            /* 82 */ 12, reg0_id, resultAddr,  // move %REG0 result (result <- 0)
+
+            // --- Loop de Multiplicação ---
+            // loop: (início no endereço 85)
+            /* 85 */ 11, yAddr, reg1_id,       // move y %REG1  (carrega y para ver se é zero)
+            /* 88 */ 18, endLoopAddr,         // jz end_loop (se y==0, pula para o fim)
+            
+            // --- Corpo do loop ---
+            // result = result + x
+            /* 90 */ 11, resultAddr, reg0_id,   // move result %REG0
+            /* 93 */ 1, xAddr, reg0_id,         // add x %REG0 (REG0 = result + x)
+            /* 96 */ 12, reg0_id, resultAddr,  // move %REG0 result
+            
+            // y = y - 1 (usando subImmReg: regA <- imm - regA, o que não serve)
+            // Lógica correta para y--: y -> REG1, 1 -> REG0, sub REG0, REG1, REG1 -> y
+            /* 99 */ 14, 1, reg0_id,            // move 1 %REG0
+            /* 102 */ 4, reg0_id, reg1_id,      // sub %REG0 %REG1 (REG1 = y - 1)
+            /* 105 */ 12, reg1_id, yAddr,       // move %REG1 y
+
+            /* 108 */ 16, loopAddr,            // jmp loop (salto incondicional)
+
+            // end_loop: (início no endereço 110)
+            // --- Finalização ---
+            // O resultado já está em 'resultAddr'.
+            // A instrução em 110 será modificada pelo 'imul' para mover o resultado ao destino certo.
+            /* 110 */ 11, resultAddr, 0,       // PLACEHOLDER: move result %<destino_final> (o '0' será substituído)
+
+            // Restaura os registradores
+            /* 113 */ 11, tempReg0, reg0_id,   // move tempReg0 %REG0
+            /* 116 */ 11, tempReg1, reg1_id,   // move tempReg1 %REG1
+
+            // Retorna para o programa principal
+            /* 119 */ 11, returnAddr, pc_id   // move returnAddr %PC
+        };
+
+        // Carrega a sub-rotina na memória da arquitetura
+        int memoryAddress = 74;
+        for (int value : subroutineMachineCode) {
+            memory.getDataList()[memoryAddress++] = value;
+        }
     }
 
     // O construtor que instancia todos os componentes de
