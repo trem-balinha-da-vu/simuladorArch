@@ -128,60 +128,43 @@ public class Architecture {
     }
 
     /**
-     * Este método define os valores na memória para a sub-rotina de multiplicação.
-     * O algoritmo e os opcodes são 100% compatíveis com a SUA arquitetura.
+     * Define a sub-rotina de multiplicação.
+     * O final da rotina (epílogo) é deixado em branco para ser preenchido
+     * dinamicamente pelos microprogramas 'imul'.
      */
     public void setupIMul() {
-        // --- Definições de Endereços e IDs ---
-        // Variáveis da sub-rotina em endereços de memória altos
+        // --- Definições ---
         int returnAddr = 121, resultAddr = 123, yAddr = 124, xAddr = 125, tempReg0 = 126, tempReg1 = 127;
-        // IDs dos Registradores (baseado na registersList)
         int reg0_id = 1, reg1_id = 2, pc_id = 5;
-        // Endereços dos Labels da sub-rotina
-        int loopAddr = 88, endLoopAddr = 111;
+        int loopAddr = 88, endLoopAddr = 111, epilogueAddr = 114;
 
-        // --- Código de Máquina da Sub-rotina ---
+        // --- Código de Máquina da Sub-rotina Principal ---
         int[] subroutineMachineCode = {
-            // --- Setup: Salva registradores e inicializa variáveis ---
+            // --- Setup ---
             /* 74 */ 12, reg0_id, tempReg0,    // move %REG0 tempReg0
             /* 77 */ 12, reg1_id, tempReg1,    // move %REG1 tempReg1
             /* 80 */ 25, 0,                   // ldi 0  (REG0 <- 0)
             /* 82 */ 12, reg0_id, resultAddr,  // move %REG0 result (result <- 0)
 
-            // --- Loop de Multiplicação ---
+            // --- Loop ---
             // loop: (início no endereço 85)
-            /* 85 */ 11, yAddr, reg1_id,       // move y %REG1  (carrega y para ver se é zero)
-            /* 88 */ 18, endLoopAddr,         // jz end_loop (se y==0, pula para o fim)
-            
-            // --- Corpo do loop ---
-            // result = result + x
+            /* 85 */ 11, yAddr, reg1_id,       // move y %REG1
+            /* 88 */ 18, endLoopAddr,         // jz end_loop (se y==0, pula)
+            // Corpo do loop
             /* 90 */ 11, resultAddr, reg0_id,   // move result %REG0
-            /* 93 */ 1, xAddr, reg0_id,         // add x %REG0 (REG0 = result + x)
+            /* 93 */ 1, xAddr, reg0_id,         // add x %REG0
             /* 96 */ 12, reg0_id, resultAddr,  // move %REG0 result
-            
-            // y = y - 1 (usando subImmReg: regA <- imm - regA, o que não serve)
-            // Lógica correta para y--: y -> REG1, 1 -> REG0, sub REG0, REG1, REG1 -> y
+            // y--
             /* 99 */ 14, 1, reg0_id,            // move 1 %REG0
-            /* 102 */ 4, reg0_id, reg1_id,      // sub %REG0 %REG1 (REG1 = y - 1)
+            /* 102 */ 4, reg0_id, reg1_id,      // sub %REG0 %REG1 (y = y-1)
             /* 105 */ 12, reg1_id, yAddr,       // move %REG1 y
-
-            /* 108 */ 16, loopAddr,            // jmp loop (salto incondicional)
-
-            // end_loop: (início no endereço 110)
-            // --- Finalização ---
-            // O resultado já está em 'resultAddr'.
-            // A instrução em 110 será modificada pelo 'imul' para mover o resultado ao destino certo.
-            /* 110 */ 11, resultAddr, 0,       // PLACEHOLDER: move result %<destino_final> (o '0' será substituído)
-
-            // Restaura os registradores
-            /* 113 */ 11, tempReg0, reg0_id,   // move tempReg0 %REG0
-            /* 116 */ 11, tempReg1, reg1_id,   // move tempReg1 %REG1
-
-            // Retorna para o programa principal
-            /* 119 */ 11, returnAddr, pc_id   // move returnAddr %PC
+            /* 108 */ 16, loopAddr,            // jmp loop
+            
+            // end_loop: (início no endereço 111)
+            /* 111 */ 16, epilogueAddr         // jmp epilogueAddr (salta para o código dinâmico)
         };
-
-        // Carrega a sub-rotina na memória da arquitetura
+        
+        // Carrega a sub-rotina na memória
         int memoryAddress = 74;
         for (int value : subroutineMachineCode) {
             memory.getDataList()[memoryAddress++] = value;
@@ -568,11 +551,132 @@ public class Architecture {
         incrementPC();
     }
 
+    private void writeToMemory(int address, int data) {
+        // Guarda o dado em ula.reg1
+        intBus1.put(data);
+        ula.internalStore(0);
+        // Guarda o endereço em ula.reg2
+        intBus1.put(address);
+        ula.internalStore(1);
+        // Realiza a escrita em 2 passos
+        ula.read(1);        // Põe o endereço no extBus
+        memory.store();     // Prepara a memória
+        ula.read(0);        // Põe o dado no extBus
+        memory.store();     // Escreve o dado
+    }
+
     //8
     // imul <mem> %<RegA>           || RegA <- RegA x memória[mem] (produto de inteiros)
+    public void imulMemReg() {
+        // --- Definições ---
+        int subroutineAddr = 74, returnAddr = 121, resultAddr = 123, xAddr = 125, yAddr = 124, epilogueAddr = 114;
+        int pc_id = 5;
+
+        // --- FASE 1: BUSCAR OPERANDO DA MEMÓRIA E PASSAR COMO PARÂMETRO 'X' ---
+        incrementPC(); // PC aponta para ponteiro <mem>
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read();
+        memory.read(); ula.store(0); // ula.reg1 <- [MEM[mem]]
+        // Escreve [MEM[mem]] em xAddr (125)
+        intBus1.put(xAddr); ula.internalStore(1);
+        ula.read(1); memory.store();
+        ula.read(0); memory.store();
+
+        // --- FASE 2: BUSCAR REG_A E PASSAR COMO PARÂMETRO 'Y' ---
+        incrementPC(); // PC aponta para id_regA
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(0); // ula.reg1 <- [regA]
+        int destRegId = demux.getValue(); // Guarda o ID do registrador de destino
+        // Escreve [regA] em yAddr (124)
+        intBus1.put(yAddr); ula.internalStore(1);
+        ula.read(1); memory.store();
+        ula.read(0); memory.store();
+        
+        // --- FASE 3: PREPARAR O EPÍLOGO E O RETORNO ---
+        // O destino é um registrador, o epílogo é mais simples:
+        // 1. move resultAddr %REG_destino
+        // 2. move returnAddr %PC
+
+        // Escreve instrução 1: move resultAddr %regA
+        writeToMemory(epilogueAddr, 11);
+        writeToMemory(epilogueAddr + 1, resultAddr);
+        writeToMemory(epilogueAddr + 2, destRegId); // Usa o ID do registrador de destino
+
+        // Escreve instrução 2: move returnAddr %PC
+        writeToMemory(epilogueAddr + 3, 11);
+        writeToMemory(epilogueAddr + 4, returnAddr);
+        writeToMemory(epilogueAddr + 5, pc_id);
+        
+        // Salva o endereço de retorno
+        incrementPC(); // PC aponta para a próxima instrução
+        PC.internalRead();
+        writeToMemory(returnAddr, PC.getData());
+
+        // --- FASE 4: SALTAR PARA A SUB-ROTINA ---
+        intBus1.put(subroutineAddr);
+        PC.internalStore();
+    }
 
     //9
     //imul %<RegA> <mem>          || memória[mem] <- RegA x memória[mem] (idem)
+    /**
+     * imul %regA <mem> => memória[mem] <- RegA * memória[mem]
+     * Versão final e correta, usando o padrão "Busca-e-Passa".
+     */
+    public void imulRegMem() {
+        // --- Definições ---
+        int subroutineAddr = 74, returnAddr = 121, resultAddr = 123, xAddr = 125, yAddr = 124, epilogueAddr = 114;
+        int reg0_id = 1, pc_id = 5;
+
+        // --- FASE 1: BUSCAR REG_A E PASSAR COMO PARÂMETRO 'X' ---
+        incrementPC(); // PC aponta para id_regA
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(0); // ula.reg1 <- [regA]
+        // Escreve [regA] em xAddr (125)
+        intBus1.put(xAddr); ula.internalStore(1); // ula.reg2 <- endereço 125
+        ula.read(1); memory.store();              // Prepara a escrita na memória
+        ula.read(0); memory.store();              // Escreve o dado [regA] em xAddr
+
+        // --- FASE 2: BUSCAR OPERANDO DA MEMÓRIA, SALVAR SEU ENDEREÇO, E PASSAR O DADO COMO PARÂMETRO 'Y' ---
+        incrementPC(); // PC aponta para ponteiro <mem>
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); // extBus <- ponteiro_mem
+        int memDestAddr = extBus.get(); // GUARDA O ENDEREÇO DE DESTINO FINAL
+        memory.read(); // extBus <- [MEM[mem]]
+        ula.store(0);  // ula.reg1 <- [MEM[mem]]
+        // Escreve [MEM[mem]] em yAddr (124)
+        intBus1.put(yAddr); ula.internalStore(1);
+        ula.read(1); memory.store();
+        ula.read(0); memory.store();
+
+        // --- FASE 3: PREPARAR O EPÍLOGO E O RETORNO ---
+        // O destino é um endereço de memória, então o epílogo precisa ser:
+        // 1. move resultAddr %REG0  (resultado para registrador temporário)
+        // 2. move %REG0 <mem_destino> (do temporário para a memória)
+        // 3. move returnAddr %PC     (retorno)
+
+        // Escreve instrução 1: move resultAddr %REG0
+        writeToMemory(epilogueAddr++, 11);
+        writeToMemory(epilogueAddr++, resultAddr);
+        writeToMemory(epilogueAddr++, reg0_id);
+
+        // Escreve instrução 2: move %REG0 <mem_destino>
+        writeToMemory(epilogueAddr++, 12);
+        writeToMemory(epilogueAddr++, reg0_id);
+        writeToMemory(epilogueAddr++, memDestAddr); // Usa o endereço salvo!
+
+        // Escreve instrução 3: move returnAddr %PC
+        writeToMemory(epilogueAddr++, 11);
+        writeToMemory(epilogueAddr++, returnAddr);
+        writeToMemory(epilogueAddr, pc_id);
+        
+        // Salva o endereço de retorno
+        incrementPC(); // PC aponta para a próxima instrução
+        PC.internalRead();
+        writeToMemory(returnAddr, PC.getData());
+
+        // --- FASE 4: SALTAR PARA A SUB-ROTINA ---
+        intBus1.put(subroutineAddr);
+        PC.internalStore();
+    }
 
     //10 
     //imul %<RegA> %<RegB>        || RegB <- RegA x RegB (idem)
