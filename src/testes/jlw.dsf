@@ -1,5 +1,0 @@
-move 6 %REG1
-move 2 %REG0
-laco:
-inc %REG0
-jlw %REG1 %REG0 laco

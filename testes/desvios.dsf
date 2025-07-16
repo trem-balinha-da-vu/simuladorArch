@@ -1,0 +1,69 @@
+; --- Programa de Teste para JZ, JEQ, JNEQ, JGT ---
+
+; --- Labels ---
+test_jeq
+test_jneq
+test_jgt
+end_program
+
+; --- FASE 1: SETUP ---
+; Zera o registrador de resultados REG3.
+; A forma mais fácil é subtrair ele dele mesmo.
+move 0 %REG3
+sub %REG3 %REG3     ; REG3 <- REG3 - REG3 = 0
+
+; --- FASE 2: TESTE DO JZ (Jump if Zero) ---
+; Deve saltar se a flag Zero for 1.
+
+; Prepara a condição: 5 - 5 = 0. Isso vai ativar a flag Zero.
+move 5 %REG0
+move 5 %REG1
+sub %REG1 %REG0     ; REG0 <- 5-5=0. Flag Z=1.
+jz test_jeq         ; Salto DEVE ocorrer.
+
+jmp end_program     ; Se chegar aqui, o teste do JZ falhou.
+
+; --- FASE 3: TESTE DO JEQ (Jump if Equal) ---
+; Deve saltar se REG0 == REG1.
+
+test_jeq:
+add 1 %REG3         ; Se chegamos aqui, JZ passou. REG3 = 1.
+; Prepara a condição: REG0 = 10, REG1 = 10.
+move 10 %REG0
+move 10 %REG1
+jeq %REG0 %REG1 test_jneq ; Salto DEVE ocorrer.
+
+jmp end_program     ; Se chegar aqui, o teste do JEQ falhou.
+
+; --- FASE 4: TESTE DO JNEQ (Jump if Not Equal) ---
+; Deve saltar se REG0 != REG1.
+
+test_jneq:
+add 2 %REG3         ; Se chegamos aqui, JEQ passou. REG3 = 1+2=3.
+; Prepara a condição: REG0 = 10, REG1 = 99.
+move 10 %REG0
+move 99 %REG1
+jneq %REG0 %REG1 test_jgt ; Salto DEVE ocorrer.
+
+jmp end_program     ; Se chegar aqui, o teste do JNEQ falhou.
+
+; --- FASE 5: TESTE DO JGT (Jump if Greater Than) ---
+; Deve saltar se REG0 > REG1.
+
+test_jgt:
+add 4 %REG3         ; Se chegamos aqui, JNEQ passou. REG3 = 3+4=7.
+; Prepara a condição: REG0 = 15, REG1 = 10.
+move 15 %REG0
+move 10 %REG1
+jgt %REG0 %REG1 end_program ; Salto DEVE ocorrer.
+
+; Se o JGT falhar, o programa termina aqui e REG3 ficará em 7.
+; Não precisamos de um jmp para o fim, pois o sucesso nos leva ao fim de qualquer forma.
+
+; --- FASE 6: FINALIZAÇÃO ---
+; Se todos os saltos funcionaram, chegamos ao final pelo caminho correto.
+
+end_program:
+add 8 %REG3         ; Se JGT passou, REG3 = 7+8=15.
+                    ; Se JGT falhou, REG3 = 7.
+                    ; Se qualquer outro falhou, REG3 terá um valor menor.

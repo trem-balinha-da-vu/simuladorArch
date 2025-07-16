@@ -1639,7 +1639,7 @@ public class Architecture {
 
     public static void main(String[] args) throws IOException {
         Architecture arch = new Architecture(true);
-        arch.readExec("simuladorArch/testes/jn");
+        arch.readExec("simuladorArch/testes/desvios");
         arch.controlUnitEexec();
         entrada.close();
     }

@@ -1,5 +1,0 @@
-move 12 %REG1
-move 7 %REG0
-laco:
-inc %REG0
-jeq %REG1 %REG0 laco
