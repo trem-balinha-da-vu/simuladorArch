@@ -1,0 +1,8 @@
+x
+move 5 %REG0
+move 15 %REG1
+move 2 x
+add %REG2 %REG1
+add x %REG0
+add %REG0 x
+add 3 %REG1

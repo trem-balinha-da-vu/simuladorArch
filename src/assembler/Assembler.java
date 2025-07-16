@@ -71,7 +71,8 @@ public class Assembler {
     // analisa as strings em linhas, gerando um codigo de maquina para cada
     public void parse() {
         for (String s : this.lines) {
-            String[] tokens = s.split(" ");
+            // joga fora espaços extras e divide em qualquer quantidade de whitespace
+			String[] tokens = s.trim().split("\\s+");
             int commandNumber = findCommandNumber(tokens); //só vai retornar -1 se não for um comando. Do contrário, retorna a posição de memória do comando na lista vinda de arch
             if (commandNumber >= 0) {
                 proccessCommand(tokens, commandNumber);
@@ -447,7 +448,8 @@ public class Assembler {
     }
 
     public static void main(String[] args) throws IOException {
-        String filename = args[0];
+        //String filename = args[0];
+		String filename = "testes/programjlw";
         Assembler assembler = new Assembler();
         System.out.println("Reading source assembler file: "+filename+".dsf");
         assembler.read(filename);

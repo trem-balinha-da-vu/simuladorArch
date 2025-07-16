@@ -1,0 +1,5 @@
+move 3 %REG0
+move 14 %REG1
+laco:
+sub 1 %REG1
+jgt %REG0 %REG1 laco

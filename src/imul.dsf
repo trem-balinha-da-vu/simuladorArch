@@ -1,0 +1,7 @@
+x
+move 4 %REG1
+move 6 %REG0
+move 3 x
+imul x %REG1
+imul %REG1 x
+imul %REG1 %REG0

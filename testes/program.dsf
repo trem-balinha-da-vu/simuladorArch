@@ -1,0 +1,38 @@
+a
+b
+c
+t
+
+; inicializa a, b, c
+ldi   1
+store a
+
+ldi   3
+store b
+
+ldi   4
+store c
+
+; guarda t = b
+read  b
+store t
+
+; carrega c em REG1 (para comparar depois)
+read  c
+move  %REG0 %REG1
+
+laco:
+    ; b ← b + t
+    read  b
+    add   t %REG0
+    store b
+
+    ; a ← a + 1
+    read  a
+    inc   %REG0
+    store a
+
+    ; testa se a < c
+    read  a
+    sub   %REG0 %REG1    ; REG1 ← a–c, atualiza flags
+    jn    laco           ; enquanto (a–c)<0 volta pro loop

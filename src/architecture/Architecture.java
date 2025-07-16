@@ -9,6 +9,8 @@ import java.util.Scanner;
 import components.*;
 
 public class Architecture {
+    private static Scanner entrada = new Scanner(System.in);
+
 
     private boolean simulation;
     private boolean halt;
@@ -55,10 +57,10 @@ public class Architecture {
         // Ordem dos parâmetros do construtor de Register: (Register, BusInt e BusExt)
         // Os registradores estão com o terceiro parâmetro nulo porque não se conectam ao barramento externo
         IR = new Register("IR", intBus1, null);
-        REG0 = new Register("RPG0", intBus1, null);
-        REG1 = new Register("RPG1", intBus1, null);
-        REG2 = new Register("RPG2", intBus1, null);
-        REG3 = new Register("RPG3", intBus1, null);
+        REG0 = new Register("REG0", intBus1, null);
+        REG1 = new Register("REG1", intBus1, null);
+        REG2 = new Register("REG2", intBus1, null);
+        REG3 = new Register("REG3", intBus1, null);
         PC = new Register("PC", intBus1, null);
         StkTOP = new Register("stkTop", intBus1, null);
 		StkBOT = new Register("stkBot", intBus1, null);
@@ -113,7 +115,7 @@ public class Architecture {
 		commandsList.add("moveRegMem");         //12
 		commandsList.add("moveRegReg");         //13
 		commandsList.add("moveImmReg");         //14
-        commandsList.add("incReg");	   	        //15
+        commandsList.add("inc");	   	        //15
 		commandsList.add("jmp");                //16
 		commandsList.add("jn");                 //17
 		commandsList.add("jz");                 //18
@@ -904,13 +906,13 @@ public class Architecture {
         PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read();
         demux.setValue(extBus.get()); // Demux aponta para %regA
         registersInternalRead(); // Conteúdo de %regA vai para o intBus1
-        ula.internalStore(0);    // ula.reg1 <- [conteúdo de %regA]
+        ula.internalStore(1);    // ula.reg2 <- [conteúdo de %regA]
 
         // FASE 2: INCREMENTA O VALOR NA ULA
-        ula.inc(); // ula.reg1 <- [conteúdo de %regA] + 1
+        ula.inc(); // ula.reg2 <- [conteúdo de %regA] + 1
         
         // FASE 3: ARMAZENA O RESULTADO DE VOLTA NO REGISTRADOR
-        ula.internalRead(0);
+        ula.internalRead(1);
         registersInternalStore(); // %regA <- [novo valor]
 
         // FASE 4: ATUALIZA O PC
@@ -1228,64 +1230,47 @@ public class Architecture {
         PC.internalStore();
     }
 
-    //22
-    //jlw %<regA> %<regB> <mem>   || se RegA<RegB então PC <- mem (desvio condicional)
+    // 22
+    // jlw %<regA> %<regB> <mem>   || se RegA<RegB então PC <- mem
     public void jlw() {
-        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO (regA - regB) ---
+        // --- FASE 1: BUSCAR OPERANDOS E REALIZAR COMPARAÇÃO ---
+        // Esta parte está correta.
+        incrementPC();
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(0);
 
-        // 1.1: Busca o valor de %regA e armazena em ula.reg1.
-        incrementPC(); // PC aponta para N+1 (ID de regA).
-        PC.internalRead(); 
-        ula.internalStore(0); 
-        ula.read(0); 
-        memory.read(); 
-        demux.setValue(extBus.get());
-        registersInternalRead(); 
-        ula.internalStore(0); // ula.reg1 <- [conteúdo de regA]
+        incrementPC();
+        PC.internalRead(); ula.internalStore(1); ula.read(1); memory.read(); demux.setValue(extBus.get());
+        registersInternalRead(); ula.internalStore(1);
 
-        // 1.2: Busca o valor de %regB e armazena em ula.reg2.
-        incrementPC(); // PC aponta para N+2 (ID de regB).
-        PC.internalRead(); 
-        ula.internalStore(1); 
-        ula.read(1); 
-        memory.read(); 
-        demux.setValue(extBus.get());
-        registersInternalRead(); 
-        ula.internalStore(1); // ula.reg2 <- [conteúdo de regB]
-
-        // 1.3: ULA executa regA - regB (ula.reg1 - ula.reg2) e atualiza as flags.
         ula.sub();
-        setStatusFlags(intBus1.get()); // Flags são atualizadas com base no resultado.
+        setStatusFlags(intBus1.get());
 
-        // --- FASE 2: DESVIO CONDICIONAL (BASEADO NA FLAG NEGATIVO) ---
+        // --- FASE 2: DESVIO CONDICIONAL ---
+        // 2.1: Prepara os endereços de "pulo" e "continuação".
+        // O PC está em N+2. O pulo é para [N+3], a continuação é para N+4.
 
-        // 2.1: Prepara os endereços de "pulo" e "continuação" na statusMemory.
-        // O PC está em N+2. O endereço de "pulo" está em N+3 e o de "continuação" é N+4.
-
-        // Endereço de "continuação" (N+4, ou seja, PC+2):
-        PC.internalRead(); 
-        ula.internalStore(0); 
-        ula.inc(); 
-        ula.inc(); 
-        ula.read(0);
-        statusMemory.storeIn0(); // statusMemory[0] <- PC+2 (N+4)
+        // Endereço de "continuação" (N+4, ou seja, PC+2): **CORRIGIDO**
+        PC.internalRead();
+        ula.internalStore(1);   // << CORRIGIDO: Usa ula.reg2 para o valor do PC
+        ula.inc();              // Agora o inc() funciona no registrador correto.
+        ula.inc();              // Calcula N+4.
+        ula.read(1);            // << CORRIGIDO: Lê de ula.reg2
+        statusMemory.storeIn0();
 
         // Endereço de "pulo" (de [N+3]):
-        incrementPC(); // PC aponta para N+3 (endereço <mem>).
-        PC.internalRead(); 
-        ula.internalStore(1); 
-        ula.read(1); 
-        memory.read();
-        statusMemory.storeIn1(); // statusMemory[1] <- <mem>
+        incrementPC();
+        PC.internalRead(); ula.internalStore(1); ula.read(1); memory.read();
+        statusMemory.storeIn1();
 
-        // 2.2: Usa a flag Negativo (bit 1) para selecionar o próximo PC.
+        // 2.2: Usa a flag Negativo para selecionar o próximo PC.
         extBus.put(Flags.getBit(1));
-        statusMemory.read(); // O endereço de destino correto (pulo ou continuação) está agora no extBus.
+        statusMemory.read();
         
         // 2.3: Move o endereço selecionado para o PC.
         ula.store(0);
         ula.internalRead(0);
-        PC.internalStore(); // PC é atualizado com o destino correto.
+        PC.internalStore();
     }
 
     //23
@@ -1617,11 +1602,10 @@ public class Architecture {
                 System.out.println(r.getRegisterName() + ": " + r.getData());
             }
 
-            Scanner entrada = new Scanner(System.in);
             System.out.println("Press <Enter>");
             String mensagem = entrada.nextLine();
 
-            entrada.close();
+            
         }
     }
 
@@ -1635,7 +1619,11 @@ public class Architecture {
 
     private void fetch() {
         this.PC.internalRead();
+        this.ula.internalStore(0);
+        this.ula.read(0);
         this.memory.read();
+        this.ula.store(0);
+        this.ula.internalRead(0);
         this.IR.internalStore();
         simulationFetch();
     }
@@ -1651,10 +1639,10 @@ public class Architecture {
 
     public static void main(String[] args) throws IOException {
         Architecture arch = new Architecture(true);
-        arch.readExec("program");
+        arch.readExec("testes/programjlw");
         arch.controlUnitEexec();
+        entrada.close();
     }
-
 
 }
 
