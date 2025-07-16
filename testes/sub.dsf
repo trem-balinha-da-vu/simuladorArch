@@ -1,0 +1,37 @@
+; --- Programa de Teste Unificado para todas as instruções SUB ---
+
+; --- Variáveis ---
+myVar
+
+; --- FASE 1: SETUP ---
+; Inicializa os registradores e a memória com valores conhecidos.
+move 50 %REG0     ; Define REG0 = 50
+move 15 %REG1     ; Define REG1 = 15
+move 3 %REG2      ; Usa REG2 como temporário para colocar o valor 3...
+move %REG2 myVar    ; ...na variável de memória 'myVar'. Agora, myVar = 3.
+
+; --- FASE 2: TESTES ---
+; Agora, com valores conhecidos, testamos cada variante de SUB.
+; Acompanhe os resultados esperados nos comentários.
+
+; Teste 1: subImmReg (REG0 <- imm - REG0)
+; REG0 deveria ir de 50 para (10 - 50) = -40.
+sub 10 %REG0
+
+; Teste 2: subRegReg (REG0 <- REG1 - REG0)
+; REG0 deveria ir de -40 para (15 - (-40)) = 55.
+sub %REG1 %REG0
+
+; Teste 3: subMemReg (REG1 <- myVar - REG1)
+; REG1 deveria ir de 15 para (3 - 15) = -12.
+sub myVar %REG1
+
+; Teste 4: subRegMem (myVar <- REG0 - myVar)
+; myVar deveria ir de 3 para (55 - 3) = 52.
+sub %REG0 myVar
+
+; --- FASE 3: VERIFICAÇÃO (Opcional) ---
+; Para facilitar a verificação, vamos carregar o valor final de myVar
+; em um registrador para que ele apareça claramente no log final.
+read myVar
+move %REG0 %REG2  ; O resultado da leitura (52) vai para REG0, e aqui movemos para REG2.

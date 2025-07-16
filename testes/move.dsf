@@ -1,0 +1,32 @@
+; --- Programa de Teste Unificado para todas as instruções MOVE ---
+
+; --- Variáveis ---
+sourceVar
+
+; --- FASE 1: SETUP E TESTE DAS DUAS PRIMEIRAS INSTRUÇÕES ---
+
+; Teste 1: moveImmReg (REG0 <- 111)
+; Carrega um valor imediato em REG0.
+move 111 %REG0
+
+; Teste 2: moveRegMem (sourceVar <- REG0)
+; Move o valor de REG0 para a memória.
+; Ao final, REG0 = 111 e Memoria[sourceVar] = 111.
+move %REG0 sourceVar
+
+; --- FASE 2: TESTE DAS DUAS INSTRUÇÕES RESTANTES ---
+
+; Teste 3: moveMemReg (REG1 <- sourceVar)
+; Move o valor da memória de volta para um NOVO registrador (REG1).
+; Ao final, REG1 deve ser 111.
+move sourceVar %REG1
+
+; Teste 4: moveRegReg (REG2 <- REG1)
+; Move o valor de REG1 para um terceiro registrador (REG2).
+; Ao final, REG2 também deve ser 111.
+move %REG1 %REG2
+
+; --- FASE 3: VERIFICAÇÃO FINAL ---
+; Nesta fase, todos os componentes envolvidos devem ter o valor 111.
+; Para confirmar o valor da memória, vamos lê-lo de volta para o REG0.
+read sourceVar
