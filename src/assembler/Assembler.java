@@ -451,7 +451,7 @@ public class Assembler {
 
     public static void main(String[] args) throws IOException {
         //String filename = args[0];
-		String filename = "simuladorArch/testes/desvios";
+		String filename = "testes/imul";
         Assembler assembler = new Assembler();
         System.out.println("Reading source assembler file: "+filename+".dsf");
         assembler.read(filename);
