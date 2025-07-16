@@ -147,6 +147,58 @@ public class Architecture {
 			move regA regB (regA <- regB)
 	 */
 
+    // move %regA <mem>
+    public void moveRegMem() {
+        // coloca o endereco do pc no bus externo
+        PC.read();  
+        
+        // memoria le o endereco e coloca o id no bus
+        memory.read();
+        int regId = extBus.get();
+        
+        // incrementa o pc p/ apontar p/ o prox. operando
+        PC.read();
+        ula.store(0);
+        extBus.setData(1);
+        ula.store(1);
+        ula.add();
+        ula.read(2);
+        PC.store();
+
+        // coloca o endereco do PC no bus
+        PC.read();
+
+        // memoria le o endereco e coloca o endereco de destino no bus
+        memory.read(); 
+        int memAddress = extBus.get();
+
+        // incrementa o pc novamente p/ apontar p/ proxima instrucao
+        PC.read();
+        ula.store(0);
+        extBus.setData(1);
+        ula.store(1);
+        ula.add();
+        ula.read(2);
+        PC.store();
+
+        // configurando o demux p/ selecionar o registrador de origem
+        demux.setValue(regId);
+
+        // le o valor do reg escolhido e poe no bus externo
+        registersList.get(demux.getValue()).read();
+        
+        // guarda o valor numa variavel local p/ o bus ser usado novamente
+        int valueStored = extBus.getData();
+
+        // enviar o endereco p/ a memoria
+        extBus.setData(memAddress);
+        memory.store();
+
+        // enviar o dado que sera escrito no endereco
+        extBus.setData(valueStored);
+        memory.store();
+    }
+
     // sub %regA %regB => regB <- regA - regB
     public void subRegReg() {
         // busca regA
