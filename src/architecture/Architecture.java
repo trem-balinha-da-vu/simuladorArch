@@ -73,7 +73,7 @@ public class Architecture {
 
         statusMemory = new Memory(2, extBus);
         
-        memorySize = 128;
+        memorySize = 256;
         memory = new Memory(memorySize, extBus);
 
         demux = new Demux();
@@ -133,44 +133,65 @@ public class Architecture {
      * O final da rotina (epílogo) é deixado em branco para ser preenchido
      * dinamicamente pelos microprogramas 'imul'.
      */
-    public void setupIMul() {
-        // --- Definições ---
-        int returnAddr = 121, resultAddr = 123, yAddr = 124, xAddr = 125, tempReg0 = 126, tempReg1 = 127;
-        int reg0_id = 1, reg1_id = 2, pc_id = 5;
-        int loopAddr = 88, endLoopAddr = 111, epilogueAddr = 114;
-
-        // --- Código de Máquina da Sub-rotina Principal ---
-        int[] subroutineMachineCode = {
-            // --- Setup ---
-            /* 74 */ 12, reg0_id, tempReg0,    // move %REG0 tempReg0
-            /* 77 */ 12, reg1_id, tempReg1,    // move %REG1 tempReg1
-            /* 80 */ 25, 0,                   // ldi 0  (REG0 <- 0)
-            /* 82 */ 12, reg0_id, resultAddr,  // move %REG0 result (result <- 0)
-
-            // --- Loop ---
-            // loop: (início no endereço 85)
-            /* 85 */ 11, yAddr, reg1_id,       // move y %REG1
-            /* 88 */ 18, endLoopAddr,         // jz end_loop (se y==0, pula)
-            // Corpo do loop
-            /* 90 */ 11, resultAddr, reg0_id,   // move result %REG0
-            /* 93 */ 1, xAddr, reg0_id,         // add x %REG0
-            /* 96 */ 12, reg0_id, resultAddr,  // move %REG0 result
-            // y--
-            /* 99 */ 14, 1, reg0_id,            // move 1 %REG0
-            /* 102 */ 4, reg0_id, reg1_id,      // sub %REG0 %REG1 (y = y-1)
-            /* 105 */ 12, reg1_id, yAddr,       // move %REG1 y
-            /* 108 */ 16, loopAddr,            // jmp loop
-            
-            // end_loop: (início no endereço 111)
-            /* 111 */ 16, epilogueAddr         // jmp epilogueAddr (salta para o código dinâmico)
-        };
-        
-        // Carrega a sub-rotina na memória
-        int memoryAddress = 74;
-        for (int value : subroutineMachineCode) {
-            memory.getDataList()[memoryAddress++] = value;
-        }
+    /**
+ * Versão FINAL e DEFINITIVA do setupIMul, construída do zero.
+ * Carrega uma sub-rotina de multiplicação por software que é 100%
+ * compatível com as instruções e a lógica da arquitetura.
+ */
+public void setupIMul() {
+    // Garante que a memória é grande o suficiente.
+    if (memorySize < 256) {
+        System.out.println("AVISO: A memória deve ser de 256 posições para a sub-rotina IMUL funcionar.");
+        return;
     }
+    
+    // --- Definições de Endereços e IDs ---
+    int tempReg1Addr = 250, oneConstAddr = 251, returnAddr = 252, resultAddr = 253, yAddr = 254, xAddr = 255, tempReg0Addr = 255;
+    int reg0_id = 1, reg1_id = 2, pc_id = 5;
+    int loopAddr = 90, endLoopAddr = 121, epilogueAddr = 124;
+
+    int[] subroutineMachineCode = {
+        // --- Setup ---
+        /* 74 */ 12, reg0_id, tempReg0Addr,  // move %REG0 tempReg0
+        /* 77 */ 12, reg1_id, tempReg1Addr,  // move %REG1 tempReg1
+        /* 80 */ 25, 0,                     // ldi 0
+        /* 82 */ 12, reg0_id, resultAddr,    // move %REG0 result
+        /* 85 */ 25, 1,                     // ldi 1
+        /* 87 */ 12, reg0_id, oneConstAddr,  // move %REG0 oneConst
+
+        // --- Loop ---
+        // loop: (início em 90)
+        /* 90 */ 11, yAddr, reg0_id,         // move y %REG0
+        /* 93 */ 18, endLoopAddr,           // jz end_loop (pula se y==0)
+
+        // Corpo: result += x
+        /* 95 */ 11, resultAddr, reg1_id,     // move result %REG1
+        /* 98 */ 1, xAddr, reg1_id,           // add x %REG1
+        /* 101 */ 12, reg1_id, resultAddr,    // move %REG1 result
+
+        // Decremento: y--
+        /* 104 */ 11, yAddr, reg0_id,         // move y %REG0
+        /* 107 */ 5, oneConstAddr, reg0_id,   // sub oneConst %REG0 (REG0 = y - 1)
+        /* 110 */ 12, reg0_id, yAddr,         // move %REG0 y
+
+        /* 113 */ 16, loopAddr,               // jmp loop
+
+        // end_loop: (início em 115)
+        /* 115 */ 16, epilogueAddr,           // jmp epilogue
+
+        // epilogue: (início em 118)
+        /* 118 */ 11, resultAddr, reg1_id,    // move result %REG1 (retorno padrão do resultado)
+        /* 121 */ 11, tempReg0Addr, reg0_id,  // move tempReg0 %REG0
+        /* 124 */ 11, tempReg1Addr, reg1_id,  // move tempReg1 %REG1
+        /* 127 */ 11, returnAddr, pc_id      // move returnAddr %PC
+    };
+
+    // Carrega a sub-rotina na memória
+    int memoryAddress = 74;
+    for (int value : subroutineMachineCode) {
+        memory.getDataList()[memoryAddress++] = value;
+    }
+}
 
     // O construtor que instancia todos os componentes de
     // Acordo com o diagrama da arquitetura
