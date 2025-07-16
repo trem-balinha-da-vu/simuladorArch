@@ -180,9 +180,9 @@ public class Architecture {
     // Função auxiliar para reusar a lógica de incremento do PC
     private void incrementPC() {
         PC.internalRead();      // intBus1 <- [PC]
-        ula.internalStore(1);   // ula.reg2 <- [PC] (usa ula.reg2 como temporário)
+        ula.internalStore(0);   // ula.reg2 <- [PC] (usa ula.reg2 como temporário)
         ula.inc();              // ula.reg2 <- [PC] + 1
-        ula.internalRead(1);    // intBus1 <- [PC] + 1
+        ula.internalRead(0);    // intBus1 <- [PC] + 1
         PC.internalStore();     // PC <- [PC] + 1
     }
 
@@ -603,6 +603,28 @@ public class Architecture {
         incrementPC();
     }
 
+
+    //14
+    //move imm %<regA>            || RegA <- immediate
+
+    //15
+    //inc %<regA>                 || RegA ++
+    public void incReg() {
+        incrementPC();
+
+        ula.read(0); //regA ainda está na ula
+        memory.read(); // retorna ID de regA
+
+        demux.setValue(extBus.get());
+        registersInternalRead();
+
+        ula.internalStore(0);
+        ula.inc();
+        ula.internalRead(0);
+        registersInternalStore();
+
+        incrementPC();
+    }
 
      /**
 	 * This method performs an (external) read from a register into the register list.
