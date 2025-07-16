@@ -517,7 +517,7 @@ public class Architecture {
 
     //11
     //move <mem> %<regA>          || RegA <- memória[mem]
-    private void moveMemReg() {
+    public void moveMemReg() {
 
         // --- FASE 1: BUSCAR O PONTEIRO DA MEMÓRIA E ARMAZENAR EM ula(0) ---
 
@@ -713,7 +713,7 @@ public class Architecture {
         incrementPC();
     }
 
-    //25
+    //24
     //store
     public void store() {
         // --- FASE 1: BUSCAR O ENDEREÇO DE DESTINO ---
@@ -743,6 +743,52 @@ public class Architecture {
         // O PC já avançou uma vez, agora avança de novo para N+2
         incrementPC();
     }
+
+    //25
+    //ldi 
+    /**
+     * ldi <immediate> => REG0 <- immediate
+     * Versão final corrigida, respeitando que nem o PC nem o REG0 acessam
+     * o barramento externo diretamente. A ULA é usada como ponte para
+     * endereços e dados.
+     */
+    public void ldi() {
+
+        // --- FASE 1: LEVAR O ENDEREÇO [PC+1] PARA O EXTBUS VIA ULA ---
+
+        // 1.1: Calcula o endereço do imediato (PC+1) e o armazena em ula(1).
+        PC.internalRead();          // PC -> intBus1
+        ula.internalStore(1);       // ula(1) <- intBus1 (ula(1) guarda o valor original do PC).
+        ula.inc();                  // ula(1)++ (ula(1) agora tem o endereço PC+1).
+
+        // 1.2: Usa a ULA para colocar o endereço no barramento externo.
+        ula.read(1);                // ula(1) -> extBus.
+
+
+        // --- FASE 2: BUSCAR O IMEDIATO E MOVER PARA REG0 VIA ULA ---
+
+        // 2.1: Memória lê o endereço e coloca o dado (imediato) no extBus.
+        memory.read();              // extBus <- Memória[PC+1].
+
+        // 2.2: ULA busca o valor do extBus e o move para o intBus.
+        ula.store(1);               // ula(1) <- extBus (ULA captura o valor imediato).
+        ula.internalRead(1);        // ula(1) -> intBus1 (ULA coloca o valor imediato no barramento interno).
+
+        // 2.3: REG0 armazena o valor que está no intBus.
+        demux.setValue(1);        // Aponta para REG0 (índice 1)
+        registersInternalStore();
+
+        // --- FASE 3: ATUALIZAR O PC PARA A PRÓXIMA INSTRUÇÃO ---
+        // Precisamos recalcular PC+2, pois ula(1) foi sobrescrito.
+        PC.internalRead();          // PC -> intBus1.
+        ula.internalStore(1);       // ula(1) <- intBus1.
+        ula.inc();                  // ula(1)++ (PC+1).
+        ula.inc();                  // ula(1)++ (PC+2).
+        ula.internalRead(1);        // ula(1) -> intBus1.
+        PC.internalStore();         // PC <- intBus1. Fim do microprograma.
+    }
+
+    
 
      /**
 	 * This method performs an (external) read from a register into the register list.
@@ -839,15 +885,15 @@ public class Architecture {
 			subImmReg();
 			break;
 		case 8:
-			imulMemReg(); //Linha 1310
+			imulMemReg(); 
 			break;
 
 		case 9:
-			imulRegMem(); //Linha 1314
+			imulRegMem(); 
 			break;
 
 		case 10:
-			imulRegReg(); //Linha 
+			imulRegReg();  
 			break;
 
 		case 11:
