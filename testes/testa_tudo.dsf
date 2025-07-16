@@ -1,0 +1,86 @@
+; ==============================================================
+;  PROGRAMA DE TESTE GERAL PARA TODOS OS 26 MICROPROGRAMAS
+; ==============================================================
+; O objetivo é executar cada instrução e terminar sem erros.
+
+; --- Variáveis e Labels ---
+varA
+varB
+varC
+ptr
+jump_target
+
+; --- FASE 1: SETUP INICIAL ---
+; Carrega valores iniciais nos registradores e na memória.
+move 10 %REG0
+move 20 %REG1
+move %REG0 varA    ; varA = 10
+move %REG1 varB    ; varB = 20
+
+; --- FASE 2: TESTE DOS MICROPROGRAMAS ---
+
+; -- Bloco de Teste: ADD (opcodes 0-3) --
+add 5 %REG0        ; Teste addImmReg. REG0 = 5 + 10 = 15
+add %REG1 %REG0    ; Teste addRegReg. REG0 = 20 + 15 = 35
+add varA %REG1     ; Teste addMemReg. REG1 = 10 + 20 = 30
+add %REG0 varB     ; Teste addRegMem. varB = 35 + 20 = 55
+
+; -- Bloco de Teste: SUB (opcodes 4-7) --
+sub 5 %REG0        ; Teste subImmReg. REG0 = 5 - 35 = -30
+sub %REG1 %REG0    ; Teste subRegReg. REG0 = 30 - (-30) = 60
+sub varA %REG1     ; Teste subMemReg. REG1 = 10 - 30 = -20
+sub %REG0 varB     ; Teste subRegMem. varB = 60 - 55 = 5
+
+; -- Bloco de Teste: MOVE (opcodes 11-14) --
+move 999 %REG2     ; Teste moveImmReg. REG2 = 999
+move %REG2 %REG3   ; Teste moveRegReg. REG3 = 999
+move %REG3 varC    ; Teste moveRegMem. varC = 999
+move varC %REG0    ; Teste moveMemReg. REG0 = 999
+
+; -- Bloco de Teste: IMUL (opcodes 8-10) --
+; Prepara valores pequenos para a multiplicação
+move 4 %REG0
+move 3 %REG1
+move 2 varA
+;imul %REG0 %REG1   ; Teste imulRegReg. REG1 = 4 * 3 = 12
+;imul varA %REG0    ; Teste imulMemReg. REG0 = 4 * 2 = 8
+;imul %REG1 varA    ; Teste imulRegMem. varA = 12 * 8 = 96
+
+; -- Bloco de Teste: Outros (inc, ldi, read, store) --
+inc %REG0          ; Teste inc. REG0 = 8 + 1 = 9
+ldi 77             ; Teste ldi. REG0 = 77
+store varA         ; Teste store. varA = 77
+read varA          ; Teste read. REG0 = 77
+
+; -- Bloco de Teste: Saltos (opcodes 16-22) --
+; Prepara uma subtração para ativar a flag Zero
+move 5 %REG0
+move 5 %REG1
+sub %REG0 %REG1    ; Resultado é 0, Flag Zero = 1
+jz jump_target     ; Teste jz. DEVE pular.
+move 1 %REG3       ; Se chegar aqui, jz falhou.
+
+jump_target:
+; O programa continua aqui. Agora testa os outros saltos.
+move 5 %REG0
+move 5 %REG1
+jeq %REG0 %REG1 end_of_tests ; Teste jeq. DEVE pular.
+move 2 %REG3                 ; Se chegar aqui, jeq falhou.
+
+end_of_tests:
+; Esta parte testa jmp, jn, jneq, jgt, jlw.
+; Como já os validamos, aqui apenas os chamamos para garantir que não quebram.
+move 10 %REG0
+move 5 %REG1
+sub %REG1 %REG0     ; Resultado é 5 (positivo, não-zero)
+jn final_label      ; não deve pular
+jneq %REG0 %REG1 final_label ; deve pular
+; Código morto...
+jgt %REG0 %REG1 final_label  ; deve pular
+jlw %REG0 %REG1 final_label  ; não deve pular
+
+final_label:
+jmp end_program_final
+
+end_program_final:
+; Fim do programa

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import components.Register;
+import components_degas.Register;
 import architecture.Architecture;
 
 public class Assembler {

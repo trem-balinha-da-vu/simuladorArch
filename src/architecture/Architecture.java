@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Scanner;
-import components.*;
+import components_degas.*;
 
 public class Architecture {
     private static Scanner entrada = new Scanner(System.in);
@@ -37,7 +37,7 @@ public class Architecture {
     private Register Flags;
 
     //ULA
-    private ULA ula;
+    private Ula ula;
 
     //Demux
     private Demux demux;
@@ -69,7 +69,7 @@ public class Architecture {
 
         fillRegistersList();
 
-        ula = new ULA(intBus1, extBus);
+        ula = new Ula(intBus1, extBus);
 
         statusMemory = new Memory(2, extBus);
         
@@ -223,7 +223,7 @@ public void setupIMul() {
 	public Register getFlags() { return this.Flags; }
     public Bus getInBus1(){ return this.intBus1; }
     public Bus getExtBus(){ return this.extBus; }
-    public ULA getUla() { return this.ula; }
+    public Ula getUla() { return this.ula; }
     public Memory getMemory(){ return this.memory; }
 
     // metodo geral para registradores
