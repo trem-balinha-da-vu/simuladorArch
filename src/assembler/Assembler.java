@@ -366,8 +366,10 @@ public class Assembler {
     protected void replaceAllVariables() {
         int position = arch.getMemorySize()-1; //starting from the end of the memory
         for (String var : this.variables) { //scanning all variables
+            if (!labelsMap.containsKey(var)) {
             replaceVariable(var, position);
-            position --;
+            position--;
+        }
         }
     }
 
