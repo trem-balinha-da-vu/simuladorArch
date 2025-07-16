@@ -180,9 +180,9 @@ public class Architecture {
     // Função auxiliar para reusar a lógica de incremento do PC
     private void incrementPC() {
         PC.internalRead();      // intBus1 <- [PC]
-        ula.internalStore(0);   // ula.reg2 <- [PC] (usa ula.reg2 como temporário)
+        ula.internalStore(1);   // ula.reg2 <- [PC] (usa ula.reg2 como temporário)
         ula.inc();              // ula.reg2 <- [PC] + 1
-        ula.internalRead(0);    // intBus1 <- [PC] + 1
+        ula.internalRead(1);    // intBus1 <- [PC] + 1
         PC.internalStore();     // PC <- [PC] + 1
     }
 
@@ -642,20 +642,30 @@ public class Architecture {
     //14
     //move imm %<regA>            || RegA <- immediate
     public void moveImmReg() {
-        incrementPC();
+        // 1. BUSCA O VALOR IMEDIATO E O ARMAZENA TEMPORARIAMENTE NA ULA
+        incrementPC(); // PC aponta para o valor imediato (em N+1)
+        
+        PC.internalRead();      // intBus1 <- [PC]
+        ula.internalStore(0);   // ula.reg1 <- [PC]
+        ula.read(0);            // extBus <- [PC] (endereço do valor imediato)
+        memory.read();          // extBus <- [valor imediato]
+        ula.store(0);           // ula.reg1 <- [valor imediato] (Guarda o valor na ULA)
 
-        ula.read(0);    // ula(0) -> extbus
-        memory.read(); // lê de extbus e devolve: imediato -> extbus
-        ula.store(1); // ula(1) <- extbus: ula(1) guarda imediato
+        // 2. BUSCA O ID DO REGISTRADOR DE DESTINO
+        incrementPC(); // PC aponta para o ID de %regA (em N+2)
 
-        incrementPC();
+        PC.internalRead();
+        ula.internalStore(1);
+        ula.read(1);
+        memory.read(); // extBus <- ID de regA
+        
+        demux.setValue(extBus.get()); // demux <- ID de regA
 
-        ula.read(0);
-        memory.read(); // retorna o id de reg
-        demux.setValue(extBus.get());
-        ula.internalRead(1); //joga o imediato no extbus
-        registersInternalStore();
+        // 3. MOVE O VALOR DA ULA PARA O REGISTRADOR DE DESTINO
+        ula.internalRead(0);      // intBus1 <- [valor imediato] (lido de ula.reg1)
+        registersInternalStore(); // %regA <- intBus1
 
+        // 4. INCREMENTA PC PARA A PRÓXIMA INSTRUÇÃO
         incrementPC();
     }
 
