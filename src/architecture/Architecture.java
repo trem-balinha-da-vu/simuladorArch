@@ -687,7 +687,86 @@ public class Architecture {
 
         incrementPC();
     }
+    
+    //16
+    //jmp <mem>                   || PC <- mem (desvio incondicional)
+    /**
+     * jmp <endereço> => PC <- <endereço>
+     * Salta a execução do programa para o endereço especificado.
+     */
+    public void jmp() {
+        // --- FASE 1: BUSCAR O ENDEREÇO DE DESTINO DA MEMÓRIA ---
 
+        // 1.1: Avança o PC para apontar para o operando <endereço>.
+        incrementPC(); // PC agora aponta para N+1.
+
+        // 1.2: Busca o valor do operando <endereço> que está na memória.
+        // O caminho precisa ser: PC -> intBus1 -> ULA -> extBus -> Memória.
+        PC.internalRead();      // intBus1 <- [PC] (que agora é N+1).
+        ula.internalStore(0);   // ula.reg1 <- [PC] (Usa a ULA como ponte).
+        ula.read(0);            // extBus <- [PC] (Coloca o endereço do operando no barramento externo).
+        memory.read();          // Memória lê o endereço e coloca o DADO (o endereço de destino) no extBus.
+
+        // Neste ponto, o endereço para o qual queremos saltar está no extBus.
+
+        // --- FASE 2: CARREGAR O ENDEREÇO DE DESTINO NO PC ---
+
+        // 2.1: Move o endereço de destino do extBus para o intBus, usando a ULA como ponte.
+        ula.store(0);           // ula.reg1 <- extBus (ULA captura o endereço de destino).
+        ula.internalRead(0);    // ula.reg1 -> intBus1 (ULA joga o endereço de destino no barramento interno).
+
+        // 2.2: O PC armazena o valor que está no barramento interno.
+        PC.internalStore();     // PC <- intBus1. O salto (JUMP) foi concluído.
+
+        // Não há um terceiro incremento de PC. A próxima instrução a ser buscada (fetch)
+        // já usará o novo valor do PC.
+    }
+
+    //17 
+    // jn <mem>                    || se última operação<0 então PC <- mem (desvio condicional)
+
+    //18
+    //jz
+    /**
+     * jz <mem> => se Flags.Zero == 1, então PC <- mem
+     * Desvia a execução para o endereço <mem> se a flag Zero estiver ativa (1).
+     * Utiliza uma "statusMemory" para realizar a seleção condicional do próximo PC.
+     */
+    public void jz() {
+
+        // --- FASE 1: PREPARAÇÃO - CARREGAR OS DOIS POSSÍVEIS ENDEREÇOS NA statusMemory ---
+
+        // 1.1: Calcula e armazena o endereço de "continuação" (PC+2) em statusMemory[0].
+        PC.internalRead();          // PC -> intBus1
+        ula.internalStore(0);       // ula(0) <- PC (Guarda o PC original para cálculos)
+        ula.inc();                  // ula(0)++ (PC+1)
+        ula.inc();                  // ula(0)++ (PC+2)
+        ula.read(0);                // ula(0) -> extBus (Endereço PC+2 está no barramento externo)
+        statusMemory.storeIn0();    // statusMemory[0] <- extBus. Endereço de continuação salvo.
+
+        // 1.2: Busca o endereço de "pulo" de [PC+1] e armazena em statusMemory[1].
+        PC.internalRead();          // PC -> intBus1
+        ula.internalStore(0);       // ula(0) <- PC
+        ula.inc();                  // ula(0)++ (PC+1)
+        ula.read(0);                // ula(0) -> extBus (Endereço do operando está no extBus)
+        memory.read();              // Memória lê de [PC+1] e coloca o endereço de pulo no extBus.
+        statusMemory.storeIn1();    // statusMemory[1] <- extBus. Endereço de pulo salvo.
+
+
+        // --- FASE 2: SELEÇÃO - USAR A FLAG ZERO PARA LER O ENDEREÇO CORRETO E ATUALIZAR O PC ---
+
+        // 2.1: Coloca o valor da flag Zero (0 ou 1) no barramento externo.
+        extBus.put(Flags.getBit(0)); // Flags.getBit(0) retorna o estado da flag Zero.
+
+        // 2.2: Usa o valor da flag no barramento como endereço para ler da statusMemory.
+        statusMemory.read();        // Se extBus=0, lê de statusMemory[0]. Se extBus=1, lê de statusMemory[1].
+                                    // O endereço de destino (pulo ou continuação) está agora no extBus.
+
+        // 2.3: Move o endereço selecionado do extBus para o PC (via ULA).
+        ula.store(0);               // ula(0) <- extBus (ULA captura o endereço correto).
+        ula.internalRead(0);        // ula(0) -> intBus1 (ULA o joga para o barramento interno).
+        PC.internalStore();         // PC <- intBus1. O PC é atualizado com o destino correto.
+    }
 
     //23
     //read
