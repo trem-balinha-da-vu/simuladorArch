@@ -1,0 +1,22 @@
+; --- Programa de Teste para a instrução JMP ---
+
+; --- FASE 1: SETUP ---
+; Inicializa REG0 com um valor inicial de 5.
+move 5 %REG0
+
+; --- FASE 2: TESTE DO SALTO ---
+; A instrução abaixo deve pular diretamente para a label "alvo_do_salto",
+; ignorando a instrução "add" que vem logo em seguida.
+jmp alvo_do_salto
+
+; --- "CÓDIGO MORTO" ---
+; Esta instrução SÓ será executada se o JMP falhar.
+; Se ela rodar, REG0 se tornará 104 (5 + 99), indicando um erro.
+add 99 %REG0
+
+; --- FASE 3: DESTINO DO SALTO ---
+; O programa deve pular para cá.
+alvo_do_salto:
+; Modificamos REG0 para um valor final e bem diferente.
+; Este é o resultado que esperamos ver no final.
+move 77 %REG0

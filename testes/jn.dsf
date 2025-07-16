@@ -1,0 +1,45 @@
+; --- Programa de Teste para a instrução JN (Jump if Negative) ---
+
+; --- Labels (equivalente a declarar variáveis para endereços) ---
+jump_target
+test_2
+end_test
+
+; --- FASE 1: TESTE DO SALTO (quando a condição é VERDADEIRA) ---
+
+; 1.1: Prepara os valores para a subtração (5 - 10 = -5)
+move 5 %REG0
+move 10 %REG1
+
+; 1.2: Executa a subtração. O resultado é -5, então a flag "Negativo" será 1.
+sub %REG0 %REG1 
+
+; 1.3: Executa o JN. Como a flag "Negativo" é 1, o salto DEVE ocorrer.
+jn jump_target
+
+; 1.4: Código "morto". Esta linha só será executada se o salto falhar.
+; Se o REG0 virar 999 no final, o teste falhou.
+move 999 %REG0
+jmp end_test     ; Pula para o fim para indicar a falha.
+
+
+; --- FASE 2: TESTE DO NÃO-SALTO (quando a condição é FALSA) ---
+
+jump_target:
+; 2.1: Prepara os valores para uma nova subtração (100 - 20 = 80)
+move 100 %REG0
+move 20 %REG1
+
+; 2.2: Executa a subtração. O resultado é 80 (positivo), então a flag "Negativo" será 0.
+sub %REG0 %REG1
+
+; 2.3: Executa o JN. Como a flag "Negativo" é 0, o salto NÃO deve ocorrer.
+; A execução deve continuar para a próxima linha.
+jn end_test
+
+; 2.4: Se o salto não ocorreu (comportamento correto), mudamos REG0 para 777.
+; Este é o valor que esperamos ver no final do teste bem-sucedido.
+move 777 %REG0
+
+end_test:
+; Fim do programa de teste.
