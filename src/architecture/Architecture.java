@@ -63,7 +63,6 @@ public class Architecture {
         StkTOP = new Register("stkTop", intBus1, null);
 		StkBOT = new Register("stkBot", intBus1, null);
 
-        //TODO: Certificar se realmente é pra conectar no intBus1.
         Flags = new Register(2, intBus1);
 
         fillRegistersList();
@@ -106,7 +105,7 @@ public class Architecture {
         commandsList.add("subRegReg");    		//4
         commandsList.add("subMemReg");  		//5
         commandsList.add("subRegMem"); 		    //6
-        commandsList.add("subImmRegg");   		//7
+        commandsList.add("subImmReg");   		//7
         commandsList.add("imulMemReg");   		//8
         commandsList.add("imulRegMem");         //9
         commandsList.add("imulRegReg");         //10
@@ -897,22 +896,24 @@ public class Architecture {
         incrementPC();
     }
 
-    //15
-    //inc %<regA>                 || RegA ++
+    // 15
+    // inc %<regA> => RegA++
     public void incReg() {
-        incrementPC();
+        // FASE 1: BUSCA O ID DO REGISTRADOR E SEU CONTEÚDO
+        incrementPC(); // PC aponta para o ID de %regA
+        PC.internalRead(); ula.internalStore(0); ula.read(0); memory.read();
+        demux.setValue(extBus.get()); // Demux aponta para %regA
+        registersInternalRead(); // Conteúdo de %regA vai para o intBus1
+        ula.internalStore(0);    // ula.reg1 <- [conteúdo de %regA]
 
-        ula.read(0); //regA ainda está na ula
-        memory.read(); // retorna ID de regA
-
-        demux.setValue(extBus.get());
-        registersInternalRead();
-
-        ula.internalStore(0);
-        ula.inc();
+        // FASE 2: INCREMENTA O VALOR NA ULA
+        ula.inc(); // ula.reg1 <- [conteúdo de %regA] + 1
+        
+        // FASE 3: ARMAZENA O RESULTADO DE VOLTA NO REGISTRADOR
         ula.internalRead(0);
-        registersInternalStore();
+        registersInternalStore(); // %regA <- [novo valor]
 
+        // FASE 4: ATUALIZA O PC
         incrementPC();
     }
     
@@ -1455,15 +1456,15 @@ public class Architecture {
 	public void controlUnitEexec() {
 		halt = false;
 		while (!halt) {
-			//fetch();
-			//decodeExecute();
+			fetch();
+			decodeExecute();
 		}
 	}
 	
     private void decodeExecute() {
 		this.IR.internalRead(); //a instrução está no intBus1
 		int command = this.intBus1.get();
-		//simulationDecodeExecuteBefore(command);
+		simulationDecodeExecuteBefore(command);
 		switch (command) {
 		case 0:
 			addRegReg();
@@ -1568,7 +1569,7 @@ public class Architecture {
 			halt = true;
 			break;
 		}
-		// if (simulation) {simulationDecodeExecuteAfter(); }
+		if (simulation) {simulationDecodeExecuteAfter(); }
 	}
 
 
@@ -1647,6 +1648,13 @@ public class Architecture {
     public int getMemorySize() {
 		return memorySize;
 	}
+
+    public static void main(String[] args) throws IOException {
+        Architecture arch = new Architecture(true);
+        arch.readExec("program");
+        arch.controlUnitEexec();
+    }
+
 
 }
 
