@@ -1,0 +1,8 @@
+x
+y
+move 2 %REG1
+move 4 %REG2
+move 6 x
+move x %REG2
+move %REG1 %REG3
+move %REG2 y
