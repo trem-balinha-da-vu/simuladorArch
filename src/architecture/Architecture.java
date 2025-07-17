@@ -260,8 +260,8 @@ public class Architecture {
 
         // Execute addition and store result
         ula.add();
-        setStatusFlags(intBus.get());
         ula.internalRead(1);
+        setStatusFlags(intBus.get());
         registersInternalStore();
 
         incrementPC();
@@ -320,6 +320,7 @@ public class Architecture {
 
         // Execute addition
         ula.add();
+        ula.internalRead(1);
         setStatusFlags(intBus.get());
 
         // Store result back to memory
@@ -353,8 +354,12 @@ public class Architecture {
         memory.read();
         demux.setValue(extBus.get());
 
+        registersInternalRead();
+        ula.internalStore(1);
+
         // Execute addition and store result
-        ula.internalRead(0);
+        ula.add();
+        ula.internalRead(1);
         registersInternalStore();
 
         incrementPC();
@@ -384,8 +389,8 @@ public class Architecture {
 
         // Execute subtraction and store result
         ula.sub();
-        setStatusFlags(intBus.get());
         ula.internalRead(1);
+        setStatusFlags(intBus.get());
         registersInternalStore();
 
         incrementPC();
@@ -414,8 +419,8 @@ public class Architecture {
 
         // Execute subtraction and store result
         ula.sub();
-        setStatusFlags(intBus.get());
         ula.internalRead(1);
+        setStatusFlags(intBus.get());
         registersInternalStore();
 
         incrementPC();
@@ -444,6 +449,7 @@ public class Architecture {
 
         // Execute subtraction
         ula.sub();
+        ula.internalRead(1);
         setStatusFlags(intBus.get());
 
         // Store result back to memory
@@ -481,8 +487,8 @@ public class Architecture {
 
         // Execute subtraction and store result
         ula.sub();
-        setStatusFlags(intBus.get());
         ula.internalRead(1);
+        setStatusFlags(intBus.get());
         registersInternalStore();
 
         incrementPC();
@@ -1128,6 +1134,12 @@ public class Architecture {
                 System.out.println("memory[" + parameter + "]=" + memory.getDataList()[parameter]);
             }
         }
+
+        System.out.print("Memória: ");
+        for (int i = 0; i < 10; i++) {
+            System.out.printf("%d ", memory.getDataList()[memorySize - 10 + i]);
+        }
+        System.out.println();
     }
 
     private void simulationDecodeExecuteAfter() {
@@ -1159,11 +1171,10 @@ public class Architecture {
 
     public static void main(String[] args) throws IOException {
         Architecture arch = new Architecture(true);
-        arch.readExec("testes/testa_tudo");
+        arch.readExec("simuladorArch/testes/move");
         arch.controlUnitEexec();
         entrada.close();
     }
 }
-
 
 
